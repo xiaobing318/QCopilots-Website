@@ -16,7 +16,7 @@ const en = route('en');
       try {
         preferred = localStorage.getItem('qcopilots-locale') || 'zh';
       } catch {}
-      location.replace((preferred === 'en' ? en : zh) + location.hash);
+      location.replace((preferred === 'en' ? en : zh) + location.search + location.hash);
     </script>
     <noscript>
       <meta http-equiv="refresh" content={`0;url=${zh}`} />

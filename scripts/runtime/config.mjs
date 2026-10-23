@@ -95,7 +95,9 @@ export function caddyConfig(config, state, release) {
             handle: [
               {
                 handler: 'static_response',
-                headers: { Location: [config.basePath] },
+                headers: {
+                  Location: [`${config.basePath}{http.request.uri.prefixed_query}`],
+                },
                 status_code: 308,
               },
             ],

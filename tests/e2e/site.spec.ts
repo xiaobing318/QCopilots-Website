@@ -66,6 +66,21 @@ test('the entry page defaults to Chinese and remembers an explicit language choi
   await expect(page).toHaveURL(/\/zh\/$/);
 });
 
+test('entry redirects preserve query parameters and chapter for default and remembered languages', async ({
+  page,
+  baseURL,
+}) => {
+  const suffix = '?source=chrome-audit&label=hello%20world#products';
+  await page.goto(`./${suffix}`);
+  await expect(page).toHaveURL(new URL(`zh/${suffix}`, baseURL).href);
+  await expect(page.locator('#products')).toBeInViewport();
+  await languageLink(page, 'en').click();
+  await expect(page).toHaveURL(new URL(`en/${suffix}`, baseURL).href);
+  await page.goto(`./${suffix}`);
+  await expect(page).toHaveURL(new URL(`en/${suffix}`, baseURL).href);
+  await expect(page.locator('#products')).toBeInViewport();
+});
+
 test('language switching preserves the current product and chapter', async ({ page }) => {
   for (const product of productSlugs) {
     await page.goto(`zh/products/${product}/#faq`);
@@ -75,6 +90,20 @@ test('language switching preserves the current product and chapter', async ({ pa
     await languageLink(page, 'zh').click();
     await expect(page).toHaveURL(new RegExp(`/zh/products/${product}/#faq$`));
   }
+});
+
+test('product language links preserve query parameters and chapter in both directions', async ({
+  page,
+  baseURL,
+}) => {
+  const suffix = 'products/qcopilots-search/?source=chrome-audit#faq';
+  await page.goto(`zh/${suffix}`);
+  await languageLink(page, 'en').click();
+  await expect(page).toHaveURL(new URL(`en/${suffix}`, baseURL).href);
+  await expect(page.locator('#faq')).toBeInViewport();
+  await languageLink(page, 'zh').click();
+  await expect(page).toHaveURL(new URL(`zh/${suffix}`, baseURL).href);
+  await expect(page.locator('#faq')).toBeInViewport();
 });
 
 test('mobile navigation opens, reaches a product, and can close with Escape', async ({ page }) => {

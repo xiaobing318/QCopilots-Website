@@ -55,6 +55,12 @@ try {
   const repeated = await startNative(config);
   assert.equal(repeated.process.pid, first.pid);
   assert.match(await (await fetch(first.url)).text(), /Release one/);
+  console.log('Native smoke: prefix canonical redirects preserve the complete query string.');
+  for (const query of ['', '?source=chrome-audit&label=hello%20world&tag=one&tag=two']) {
+    const redirect = await fetch(`${first.url.slice(0, -1)}${query}`, { redirect: 'manual' });
+    assert.equal(redirect.status, 308);
+    assert.equal(redirect.headers.get('location'), `${config.basePath}${query}`);
+  }
   const notFound = await fetch(`${first.url}missing`);
   assert.equal(notFound.status, 404);
   assert.match(await notFound.text(), /Not found/);

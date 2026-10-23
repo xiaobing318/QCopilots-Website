@@ -53,10 +53,11 @@ async function state() {
   if (value.previous) images.add(value.previous.image);
   return value;
 }
-function probe(url) {
+function probe(url, options = {}) {
   // Every probe follows a synchronous Docker operation that may replace or stop
   // the server. Do not reuse a socket whose close event was blocked by spawnSync.
   return fetch(url, {
+    ...options,
     headers: { Connection: 'close' },
     signal: AbortSignal.timeout(10_000),
   });
@@ -96,6 +97,15 @@ try {
   const home = await probe(`http://127.0.0.1:${port}${basePath}zh/`);
   assert.equal(home.status, 200);
   assert.match(await home.text(), /QCopilots/);
+  console.log('Container smoke: canonical directory redirects preserve the complete query string.');
+  const directory = basePath === '/' ? '/zh/' : basePath;
+  for (const query of ['', '?source=chrome-audit&label=hello%20world&tag=one&tag=two']) {
+    const redirect = await probe(`http://127.0.0.1:${port}${directory.slice(0, -1)}${query}`, {
+      redirect: 'manual',
+    });
+    assert.equal(redirect.status, 308);
+    assert.equal(redirect.headers.get('location'), `${directory}${query}`);
+  }
   assert.equal(
     (await probe(`http://127.0.0.1:${port}${basePath}missing-container-page`)).status,
     404,

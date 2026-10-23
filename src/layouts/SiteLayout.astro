@@ -156,14 +156,20 @@ const canonical = canonicalUrl(route(locale, slug), siteUrl);
         }
       });
       matchMedia('(min-width: 768px)').addEventListener('change', () => setMenu(false));
+      document.querySelectorAll<HTMLAnchorElement>('.product-subnav a').forEach((link) => {
+        link.addEventListener('focus', () => {
+          link.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+        });
+      });
       document.querySelectorAll<HTMLAnchorElement>('a[data-locale]').forEach((link) => {
-        const updateHash = () => {
+        const updateDestination = () => {
           const url = new URL(link.href);
+          url.search = location.search;
           url.hash = location.hash;
           link.href = url.href;
         };
-        updateHash();
-        window.addEventListener('hashchange', updateHash);
+        updateDestination();
+        window.addEventListener('hashchange', updateDestination);
         link.addEventListener('click', () => {
           try {
             localStorage.setItem('qcopilots-locale', link.dataset.locale || 'zh');
