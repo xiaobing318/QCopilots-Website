@@ -53,8 +53,16 @@ async function state() {
   if (value.previous) images.add(value.previous.image);
   return value;
 }
+function probe(url) {
+  // Every probe follows a synchronous Docker operation that may replace or stop
+  // the server. Do not reuse a socket whose close event was blocked by spawnSync.
+  return fetch(url, {
+    headers: { Connection: 'close' },
+    signal: AbortSignal.timeout(10_000),
+  });
+}
 async function expectBuild(id) {
-  const response = await fetch(`http://127.0.0.1:${port}${basePath}build-info.json`);
+  const response = await probe(`http://127.0.0.1:${port}${basePath}build-info.json`);
   assert.equal(response.status, 200);
   assert.equal((await response.json()).buildId, id);
 }
@@ -85,11 +93,11 @@ try {
   cli('deploy');
   await state();
   await expectBuild('container-smoke-first');
-  const home = await fetch(`http://127.0.0.1:${port}${basePath}zh/`);
+  const home = await probe(`http://127.0.0.1:${port}${basePath}zh/`);
   assert.equal(home.status, 200);
   assert.match(await home.text(), /QCopilots/);
   assert.equal(
-    (await fetch(`http://127.0.0.1:${port}${basePath}missing-container-page`)).status,
+    (await probe(`http://127.0.0.1:${port}${basePath}missing-container-page`)).status,
     404,
   );
   cli('start');

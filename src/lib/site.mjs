@@ -1,10 +1,9 @@
 /** Normalize the one deployment prefix used by all URLs. */
 export function normalizeBase(value = '/') {
-  if (!value || value === '/') return '/';
-  if (!value.startsWith('/') || /[?#\\]|\.{2}|%/u.test(value)) {
-    throw new Error('BASE_PATH must be an absolute URL path without traversal, query or encoding.');
+  if (typeof value !== 'string' || !/^\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]*\/?$/.test(value)) {
+    throw new Error('BASE_PATH must be / or a URL path such as /QCopilots-Website/.');
   }
-  return `/${value.split('/').filter(Boolean).join('/')}/`;
+  return value === '/' ? '/' : `/${value.split('/').filter(Boolean).join('/')}/`;
 }
 
 export function withBase(path = '', base = '/') {

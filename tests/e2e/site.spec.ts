@@ -98,6 +98,110 @@ test('mobile navigation opens, reaches a product, and can close with Escape', as
   await expect(toggle).toBeFocused();
 });
 
+test('opening mobile navigation moves keyboard focus into its visible links', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    process.platform === 'win32' && browserName === 'webkit',
+    'Windows WebKit defaults disable tabbing to links.',
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('en/products/qcopilots-search/');
+  const toggle = page.getByTestId('mobile-menu-toggle');
+  const navigation = page.locator('#primary-nav');
+  await expect(toggle).toBeVisible();
+  await expect(navigation).toBeHidden();
+  for (let step = 0; step < 8; step += 1) {
+    await page.keyboard.press('Tab');
+    if (await toggle.evaluate((element) => element === document.activeElement)) break;
+  }
+  await expect(toggle).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  const links = navigation.locator('a');
+  await expect(links.first()).toHaveText('Products');
+  await expect(links.first()).toBeFocused();
+  for (const link of (await links.all()).slice(1)) {
+    await page.keyboard.press('Tab');
+    await expect(link).toBeFocused();
+    await expect(link).toBeVisible();
+    expect(await link.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+  }
+  await page.keyboard.press('Escape');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(navigation).toBeHidden();
+  await expect(toggle).toBeFocused();
+});
+
+test.describe('mobile navigation without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  for (const locale of locales) {
+    test(`${locale} exposes usable product links without an inactive menu button`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`${locale}/`);
+      await expect(page.getByTestId('mobile-menu-toggle')).toBeHidden();
+      const navigation = page.locator('#primary-nav');
+      await expect(navigation).toBeVisible();
+      for (const link of await navigation.locator('a').all()) await expect(link).toBeVisible();
+      await navigation.locator(`a[href$="/${locale}/products/qcopilots-search/"]`).click();
+      await expect(page).toHaveURL(new RegExp(`/${locale}/products/qcopilots-search/$`));
+      await expect(page.locator('h1')).toBeVisible();
+      await expect(page.locator('#primary-nav')).toBeVisible();
+    });
+  }
+});
+
+for (const width of [768, 390]) {
+  test(`English chapter links remain readable and keyboard reachable at ${width}px`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      process.platform === 'win32' && browserName === 'webkit',
+      'Windows WebKit defaults disable tabbing to links.',
+    );
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('en/products/qcopilots-search/#downloads');
+    await page.evaluate(() => document.fonts.ready);
+    const navigation = page.locator('.product-subnav .container');
+    const links = navigation.locator('a');
+    const clippedPixels = (index: number) =>
+      links.nth(index).evaluate((element) => {
+        const link = element.getBoundingClientRect();
+        const container = element.parentElement!;
+        const viewport = container.getBoundingClientRect();
+        return Math.max(
+          0,
+          viewport.left - link.left,
+          link.right - (viewport.left + container.clientWidth),
+        );
+      });
+
+    // Check the initial layout before focus can automatically scroll a clipped link into view.
+    await expect(links.first()).toHaveText('What you can do');
+    await expect.poll(() => navigation.evaluate((element) => element.scrollLeft)).toBe(0);
+    await expect.poll(() => clippedPixels(0)).toBeLessThanOrEqual(1);
+    await links.first().focus();
+    const count = await links.count();
+    for (let index = 0; index < count; index += 1) {
+      if (index > 0) await page.keyboard.press('Tab');
+      await expect(links.nth(index)).toBeFocused();
+      await expect.poll(() => clippedPixels(index)).toBeLessThanOrEqual(1);
+      await expect(links.nth(index)).toHaveCSS('outline-style', /solid|dashed|dotted|double/);
+      const focusRingOverflow = await links.nth(index).evaluate((element) => {
+        const style = getComputedStyle(element);
+        return parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+      });
+      expect(focusRingOverflow).toBeLessThanOrEqual(0);
+    }
+    await expect(links.last()).toHaveText('Get the product');
+  });
+}
+
 test('FAQ answers can be expanded by keyboard', async ({ page }) => {
   await page.goto('en/products/qcopilots/');
   const question = page.locator('#faq details').first();

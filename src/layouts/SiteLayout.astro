@@ -141,9 +141,11 @@ const canonical = canonicalUrl(route(locale, slug), siteUrl);
         );
         document.querySelector('.site-header')?.classList.toggle('menu-is-open', open);
       }
-      toggle?.addEventListener('click', () =>
-        setMenu(toggle.getAttribute('aria-expanded') !== 'true'),
-      );
+      toggle?.addEventListener('click', () => {
+        const open = toggle.getAttribute('aria-expanded') !== 'true';
+        setMenu(open);
+        if (open) document.querySelector<HTMLAnchorElement>('#primary-nav a')?.focus();
+      });
       document
         .querySelectorAll('#primary-nav a')
         .forEach((link) => link.addEventListener('click', () => setMenu(false)));
@@ -173,6 +175,7 @@ const canonical = canonicalUrl(route(locale, slug), siteUrl);
       document
         .querySelector<HTMLAnchorElement>('.skip-link')
         ?.addEventListener('click', () => document.querySelector<HTMLElement>('#main')?.focus());
+      document.querySelector('.site-header')?.classList.add('navigation-ready');
     </script>
   </body>
 </html>
