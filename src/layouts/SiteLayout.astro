@@ -1,0 +1,178 @@
+---
+import '@fontsource-variable/noto-sans-sc';
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { ui } from '../content/ui';
+import { products, type Locale } from '../content/products';
+import { asset, route, basePath, siteUrl, canonicalUrl } from '../lib/site.mjs';
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  slug?: string;
+  noindex?: boolean;
+}
+const { locale, title, description, slug = '', noindex = false } = Astro.props;
+const t = ui[locale];
+const otherLocale = locale === 'zh' ? 'en' : 'zh';
+const canonical = canonicalUrl(route(locale, slug), siteUrl);
+---
+
+<!doctype html>
+<html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="zh-CN" href={canonicalUrl(route('zh', slug), siteUrl)} />
+    <link rel="alternate" hreflang="en" href={canonicalUrl(route('en', slug), siteUrl)} />
+    <link rel="alternate" hreflang="x-default" href={canonicalUrl(route('zh', slug), siteUrl)} />
+    <link rel="icon" type="image/svg+xml" href={asset('/images/qcopilots-icon.svg')} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en_US'} />
+    <meta property="og:image" content={canonicalUrl(asset('/images/hero-map.webp'), siteUrl)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'QCopilots',
+        url: canonicalUrl(basePath, siteUrl),
+        inLanguage: ['zh-CN', 'en'],
+      }).replace(/</g, '\\u003c')}
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">
+      {t.nav.skip}
+    </a>
+    <header class="site-header">
+      <div class="header-inner container">
+        <a class="brand" href={route(locale)} aria-label="QCopilots">
+          <img src={asset('/images/qcopilots-icon.svg')} width="48" height="48" alt="" />
+          <span>QCopilots</span>
+        </a>
+        <nav id="primary-nav" aria-label={t.nav.products}>
+          <a href={`${route(locale)}#products`}>{t.nav.products}</a>
+          <a href={`${route(locale)}#use-cases`}>{t.nav.scenarios}</a>
+          {products.map((product) => (
+            <a class="mobile-product" href={route(locale, `products/${product.id}`)}>
+              {product.locales[locale].name}
+            </a>
+          ))}
+        </nav>
+        <div class="header-actions">
+          <span class="current-language">
+            {locale === 'zh' ? '简体中文' : 'EN'}
+            <span aria-hidden="true"> / </span>
+          </span>
+          <a
+            class="language-link"
+            data-testid="language-switch"
+            data-locale={otherLocale}
+            href={route(otherLocale, slug)}
+            hreflang={otherLocale === 'zh' ? 'zh-CN' : 'en'}
+            lang={otherLocale === 'zh' ? 'zh-CN' : 'en'}
+          >
+            {locale === 'zh' ? 'EN' : '简体中文'}
+          </a>
+          <a class="button button-small header-cta" href={`${route(locale)}#products`}>
+            {t.home.primaryCta}
+            <Icon />
+          </a>
+          <button
+            class="menu-toggle"
+            data-testid="mobile-menu-toggle"
+            aria-label={t.nav.menu}
+            aria-expanded="false"
+            aria-controls="primary-nav"
+            data-open-label={t.nav.menu}
+            data-close-label={t.nav.close}
+          >
+            <Icon name="menu" class="menu-open-icon" />
+            <Icon name="close" class="menu-close-icon" />
+          </button>
+        </div>
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <footer class="site-footer container">
+      <div class="footer-links">
+        <a class="footer-brand" href={route(locale)}>
+          <img src={asset('/images/qcopilots-icon.svg')} alt="" width="28" height="28" />
+          <strong>QCopilots</strong>
+        </a>
+        {products.map((product) => (
+          <a href={route(locale, `products/${product.id}`)}>
+            <img src={asset(product.icon)} alt="" width="22" height="22" />
+            {product.locales[locale].name}
+          </a>
+        ))}
+      </div>
+      <div class="footer-language">
+        <a href={route('zh', slug)} data-locale="zh" lang="zh-CN">
+          简体中文
+        </a>
+        <span aria-hidden="true">/</span>
+        <a href={route('en', slug)} data-locale="en" lang="en">
+          EN
+        </a>
+      </div>
+    </footer>
+    <script>
+      const toggle = document.querySelector<HTMLButtonElement>(
+        '[data-testid="mobile-menu-toggle"]',
+      );
+      function setMenu(open: boolean) {
+        toggle?.setAttribute('aria-expanded', String(open));
+        toggle?.setAttribute(
+          'aria-label',
+          (open ? toggle.dataset.closeLabel : toggle.dataset.openLabel) || 'Menu',
+        );
+        document.querySelector('.site-header')?.classList.toggle('menu-is-open', open);
+      }
+      toggle?.addEventListener('click', () =>
+        setMenu(toggle.getAttribute('aria-expanded') !== 'true'),
+      );
+      document
+        .querySelectorAll('#primary-nav a')
+        .forEach((link) => link.addEventListener('click', () => setMenu(false)));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
+          setMenu(false);
+          toggle.focus();
+        }
+      });
+      matchMedia('(min-width: 768px)').addEventListener('change', () => setMenu(false));
+      document.querySelectorAll<HTMLAnchorElement>('a[data-locale]').forEach((link) => {
+        const updateHash = () => {
+          const url = new URL(link.href);
+          url.hash = location.hash;
+          link.href = url.href;
+        };
+        updateHash();
+        window.addEventListener('hashchange', updateHash);
+        link.addEventListener('click', () => {
+          try {
+            localStorage.setItem('qcopilots-locale', link.dataset.locale || 'zh');
+          } catch {
+            /* Storage is optional. */
+          }
+        });
+      });
+      document
+        .querySelector<HTMLAnchorElement>('.skip-link')
+        ?.addEventListener('click', () => document.querySelector<HTMLElement>('#main')?.focus());
+    </script>
+  </body>
+</html>

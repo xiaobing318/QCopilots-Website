@@ -1,0 +1,23 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { ui } from '../content/ui';
+import { route } from '../lib/site.mjs';
+const t = ui.zh;
+---
+
+<SiteLayout locale="zh" title="404 · QCopilots" description={t.common.notFoundDescription} noindex>
+  <section class="not-found container">
+    <p class="eyebrow">404</p>
+    <h1>{t.common.notFoundTitle}</h1>
+    <p>{t.common.notFoundDescription}</p>
+    <p lang="en">This page could not be found. Continue from the home page.</p>
+    <div class="hero-buttons">
+      <a class="button" href={route('zh')}>
+        {t.common.backHome}
+      </a>
+      <a class="text-link" href={route('en')} lang="en">
+        English home
+      </a>
+    </div>
+  </section>
+</SiteLayout>

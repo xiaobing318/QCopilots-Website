@@ -1,0 +1,22 @@
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "adminPort": 20199,
+  "runtimeDir": ".qcopilots-deploy/native",
+  "sourceDir": "dist",
+  "basePath": "/",
+  "domain": null,
+  "email": null,
+  "serviceName": "qcopilots-website",
+  "compose": {
+    "projectName": "qcopilots-website",
+    "runtimeDir": ".qcopilots-deploy/compose",
+    "sourceDir": "dist",
+    "basePath": "/",
+    "host": "127.0.0.1",
+    "httpPort": 8080,
+    "httpsPort": 8443,
+    "domain": null,
+    "email": null
+  }
+}

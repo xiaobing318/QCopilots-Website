@@ -1,0 +1,32 @@
+services:
+  website:
+    image: ${QCO_IMAGE:?Deploy with site.sh deploy compose or set QCO_IMAGE}
+    restart: unless-stopped
+    init: true
+    ports:
+      - '${QCO_HOST:-127.0.0.1}:${QCO_HTTP_PORT:-8080}:80'
+      - '${QCO_HOST:-127.0.0.1}:${QCO_HTTPS_PORT:-8443}:443'
+      - '${QCO_HOST:-127.0.0.1}:${QCO_HTTPS_PORT:-8443}:443/udp'
+    environment:
+      SITE_ADDRESS: ${QCO_SITE_ADDRESS:-:80}
+      SITE_BASE_PATH: ${QCO_BASE_PATH:-/}
+      ACME_EMAIL_CONFIG: ${QCO_EMAIL_CONFIG:-}
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    labels:
+      com.qcopilots.instance: ${QCO_INSTANCE:?Set by the deployment script}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  caddy-data:
+  caddy-config:

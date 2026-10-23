@@ -1,0 +1,16 @@
+package-lock.json
+node_modules/
+dist/
+.astro/
+.runtime/
+.tools/
+.cache/
+coverage/
+/runtime/
+.qcopilots-deploy/
+artifacts/
+playwright-report/
+test-results/
+public/images/
+docs/design/
+config/toolchain.json

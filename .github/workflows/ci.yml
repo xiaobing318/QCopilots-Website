@@ -1,0 +1,207 @@
+name: Website CI and Pages
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to configured GitHub Pages after all checks pass
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  ASTRO_TELEMETRY_DISABLED: '1'
+  SITE_URL: https://xiaobing318.github.io
+  BASE_PATH: /
+
+jobs:
+  quality:
+    name: Quality and native deployment (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.1
+          cache: npm
+      - name: Set up through the Windows PowerShell 5.1 entrypoint
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\scripts\site.ps1 setup
+      - name: Set up through the Bash entrypoint
+        if: runner.os != 'Windows'
+        run: bash scripts/site.sh setup
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:built
+      - run: npm run test:native
+      - run: npm run package
+      - name: Lockfile must remain unchanged
+        run: git diff --exit-code -- package-lock.json
+      - name: Save portable build
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: website-${{ matrix.os }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
+
+  browsers:
+    name: Browsers and accessibility (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: root
+            base: /
+          - label: project-path
+            base: /QCopilots-Website/
+    env:
+      BASE_PATH: ${{ matrix.base }}
+      E2E_BROWSERS: all
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.1
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium firefox webkit
+      - run: npm run build
+      - run: npm run test:built
+      - run: npm run test:e2e
+      - name: Save browser reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: browser-reports-${{ matrix.label }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  container:
+    name: Linux production container (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: root
+            base: /
+          - label: project-path
+            base: /QCopilots-Website/
+    env:
+      BASE_PATH: ${{ matrix.base }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:container
+
+  dependencies:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.1
+          cache: npm
+      - run: npm ci
+      - name: Audit all dependencies, including build tooling
+        run: npm audit --audit-level=high --json > audit.json
+      - name: Save audit report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: dependency-audit
+          path: audit.json
+          retention-days: 14
+
+  pages-build:
+    name: Build and verify configured Pages artifact
+    needs: [quality, browsers, container, dependencies]
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' && vars.PAGES_ENABLED == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.publish))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.1
+          cache: npm
+      - name: Read the configured Pages origin and path
+        id: pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Build and test the exact artifact to be published
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path || '/' }}
+        run: |
+          npm run build
+          npm run test:built
+          npm run test:e2e
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: dist
+
+  pages-deploy:
+    name: Deploy GitHub Pages
+    needs: pages-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy tested artifact
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
