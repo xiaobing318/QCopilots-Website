@@ -26,6 +26,19 @@ Environment: Windows 11 Pro 10.0.26200 x64 with no Node, npm or gh installed. Ev
 | Playwright e2e，Firefox                                     | 本机无法启动 Firefox（Windows 并行配置错误），由 CI 在 Linux 上运行 |
 | 线上访问测试 `test:live`，旧版站点                          | 改版前的通用用例全部通过                                            |
 
+### CI 与线上访问 / CI and the live site
+
+| 提交 / Commit                        | 结果 / Result                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `7004d65` CI 与工具                  | 全部任务通过，Pages 自动发布，`pages-smoke` 通过。Dependabot 随后关闭了 PR #1 至 #7                     |
+| `e62b495` 改版                       | Firefox 字体测试失败一次。日志需要登录，因此加入 Playwright `github` 报告器，失败信息改为公开的运行注释 |
+| `9617a67` 字体测试改为检查已加载字体 | 全部通过。线上语言切换测试首次超时、重试通过                                                            |
+| `a94607c` 章节链接修复               | 全部通过且没有不稳定用例：两种路径各 135 个浏览器测试，Pages 产物 45 个，线上 16 个                     |
+
+在应用内置浏览器中模拟用户访问线上站点，发现并修复了一个真实问题：页面加载期间的平滑滚动被字体和示意图的布局变化打断，带 `#faq`、`#downloads` 的分享链接以及从章节切换语言时会停在页面顶部。现在平滑滚动在加载完成后才开启。修复上线后复查：中文和英文页面都直接落在对应章节，语言切换保留产品、查询参数和章节，404 页面提供两种语言的首页与产品链接，Search 下载按钮指向 GitHub 最新发布。
+
+A walkthrough of the live site in the app's built-in browser found one real issue. Smooth scrolling during load was cancelled while fonts and demos settled, so shared links with `#faq` or `#downloads`, and language switches from a chapter, opened at the top. Smooth scrolling now starts after load. After the fix went live, both languages land on the right chapter, language switches keep the product, query and chapter, the 404 page offers both homes and every product, and the Search download button points to the latest GitHub release.
+
 ### 并行审查 / Parallel reviews
 
 三个只读子代理分别审查视觉与体验、产品事实、代码与 CI。主代理逐条核对后修复了：手机菜单同时显示两个图标、中文标题在词中断行、英文页面引号显示为全角、手机首屏被装饰图占据、确认流程措辞过度、底图位置描述错误、`aria-current` 取值无效、`site.ps1` 转发参数出错等问题。
