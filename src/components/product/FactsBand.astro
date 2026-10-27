@@ -1,0 +1,76 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { product, locale } = Astro.props;
+const facts = product.locales[locale].facts;
+---
+
+{facts && (
+  <section class="facts section" aria-labelledby="facts-title">
+    <div class="container">
+      <h2 id="facts-title">{facts.title}</h2>
+      <dl style={`--count:${facts.items.length}`}>
+        {facts.items.map((fact) => (
+          <div>
+            <dt>{fact.label}</dt>
+            <dd>{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="note">{facts.note}</p>
+    </div>
+  </section>
+)}
+
+<style>
+  .facts h2 {
+    margin-bottom: var(--space-7);
+    font-size: var(--text-xl);
+  }
+  dl {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    margin: 0;
+  }
+  @media (min-width: 600px) {
+    dl {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    dl {
+      grid-template-columns: repeat(var(--count), 1fr);
+    }
+  }
+  /* The number sits on top and every number shares one baseline, however long its label. */
+  dl div {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    padding-top: var(--space-5);
+    border-top: 2px solid var(--product-accent);
+  }
+  dd {
+    order: -1;
+    margin: 0;
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  dt {
+    color: var(--text);
+    text-wrap: pretty;
+  }
+  .note {
+    margin-top: var(--space-6);
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+</style>

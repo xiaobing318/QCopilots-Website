@@ -1,0 +1,191 @@
+---
+import type { Locale } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+interface Props {
+  demoKey: string;
+  variant: 'full' | 'thumb';
+  caption: string;
+  locale: Locale;
+}
+const { demoKey, variant, caption, locale } = Astro.props;
+const t = ui[locale].demo;
+---
+
+{variant === 'full' ? (
+  <figure class="demo demo-full" data-demo={demoKey} data-variant="full">
+    <div class="demo-stage" data-demo-stage aria-hidden="true" inert>
+      <slot />
+    </div>
+    <figcaption>
+      <span class="demo-label">{t.illustrative}</span>
+      <span>{caption}</span>
+      <button
+        class="demo-toggle"
+        type="button"
+        data-demo-toggle
+        aria-pressed="false"
+        aria-label={t.pause}
+        hidden
+      >
+        <Icon name="pause" class="when-playing" />
+        <Icon name="play" class="when-paused" />
+      </button>
+    </figcaption>
+  </figure>
+) : (
+  <div class="demo demo-thumb" data-demo={demoKey} data-variant="thumb" aria-hidden="true">
+    <div class="demo-stage" data-demo-stage inert>
+      <slot />
+    </div>
+  </div>
+)}
+
+<script>
+  import { setupDemos } from './demo-motion.ts';
+  setupDemos();
+</script>
+
+<style is:global>
+  /*
+   * Demo contract
+   * - A demo renders one .demo-window sized in em. --demo-width sets its width in em (default 60).
+   *   The frame scales the em so the window always fits its stage.
+   * - Scenes are [data-scene="0..n"] elements. Only scene 0 is visible without JavaScript.
+   * - Children with .d-in fade up in order of --d (0, 1, 2…) while the scene plays.
+   *   .d-type reveals text from the start of the line. Both rest at their final state otherwise.
+   */
+  .demo {
+    margin: 0;
+  }
+  .demo-stage {
+    container-type: inline-size;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .demo-full .demo-stage {
+    padding: clamp(16px, 4vw, 56px);
+    border-radius: var(--radius-xl);
+    background:
+      radial-gradient(120% 90% at 20% 0%, var(--paper) 0%, transparent 60%),
+      linear-gradient(160deg, var(--product-wash) 0%, var(--ivory-100) 100%);
+  }
+  .demo-window {
+    --demo-width: 60;
+    width: calc(var(--demo-width) * 1em);
+    max-width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.75em;
+    background: var(--paper);
+    box-shadow: var(--shadow-2);
+    color: var(--ink-700);
+    font-family: var(--font-body);
+    font-size: clamp(5px, calc(100cqi / var(--demo-width)), 15px);
+    line-height: 1.45;
+    text-align: start;
+  }
+  .demo-titlebar {
+    display: flex;
+    min-height: 2.4em;
+    align-items: center;
+    gap: 0.75em;
+    padding: 0 0.9em;
+    border-bottom: 1px solid var(--line);
+    background: var(--ivory-100);
+    color: var(--ink-500);
+    font-size: 0.85em;
+  }
+  .demo-titlebar .demo-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .demo-controls {
+    display: flex;
+    gap: 1.1em;
+    color: var(--ink-500);
+  }
+  .demo-controls i {
+    width: 0.75em;
+    height: 0.75em;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    opacity: 0.55;
+  }
+  .demo-controls i:first-child {
+    height: 0;
+    align-self: center;
+    border-width: 1px 0 0;
+  }
+  .demo [data-scene][hidden] {
+    display: none;
+  }
+  .demo-full figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2) var(--space-3);
+    margin-top: var(--space-4);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+  .demo-label {
+    padding: 0.15em 0.7em;
+    border: 1px solid var(--oat-300);
+    border-radius: var(--radius-pill);
+  }
+  .demo-toggle {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--oat-300);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink-700);
+    cursor: pointer;
+  }
+  .demo-toggle[hidden] {
+    display: none;
+  }
+  .demo-toggle:hover {
+    background: var(--ivory-100);
+  }
+  .demo-toggle .icon {
+    width: 14px;
+    height: 14px;
+  }
+  .demo-toggle .when-paused,
+  .demo-toggle[aria-pressed='true'] .when-playing {
+    display: none;
+  }
+  .demo-toggle[aria-pressed='true'] .when-paused {
+    display: inline-flex;
+  }
+
+  @keyframes demo-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5em);
+    }
+  }
+  @keyframes demo-type {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+  }
+  .motion-ok .demo.is-playing [data-scene]:not([hidden]) .d-in {
+    animation: demo-in var(--dur-3) var(--ease-out) both;
+    animation-delay: calc(var(--d, 0) * 700ms + 300ms);
+  }
+  .motion-ok .demo.is-playing [data-scene]:not([hidden]) .d-type {
+    animation: demo-type 1.4s steps(32, end) both;
+    animation-delay: calc(var(--d, 0) * 700ms);
+  }
+</style>

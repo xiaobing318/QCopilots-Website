@@ -1,0 +1,50 @@
+---
+import type { Locale } from '../content/types.ts';
+import { ui } from '../content/ui.ts';
+import { htmlLang, otherLocale } from '../lib/i18n.ts';
+import { route } from '../lib/site.mjs';
+interface Props {
+  locale: Locale;
+  slug?: string;
+}
+const { locale, slug = '' } = Astro.props;
+const target = otherLocale(locale);
+// Each language is named in its own script so readers of either language can find it.
+const languageNames = { zh: '中文', en: 'English' } as const;
+---
+
+<a
+  class="language-switch"
+  data-testid="language-switch"
+  data-locale={target}
+  href={route(target, slug)}
+  hreflang={htmlLang(target)}
+  lang={htmlLang(target)}
+>
+  <span class="visually-hidden" lang={htmlLang(locale)}>
+    {ui[locale].nav.language}:{' '}
+  </span>
+  {languageNames[target]}
+</a>
+
+<style>
+  .language-switch {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 var(--space-4);
+    border: 1px solid var(--oat-300);
+    border-radius: var(--radius-pill);
+    color: var(--ink-900);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+    transition:
+      background-color var(--dur-1) var(--ease-out),
+      border-color var(--dur-1) var(--ease-out);
+  }
+  .language-switch:hover {
+    border-color: var(--ink-500);
+    background: var(--ivory-100);
+  }
+</style>

@@ -1,0 +1,1006 @@
+---
+// QGIS with the QCopilots panel docked on the right. Every visible word comes from `copy`.
+import type { DemoCopy } from '../../content/types.ts';
+interface Props {
+  copy: DemoCopy;
+  variant: 'full' | 'thumb';
+}
+// The thumb variant needs no changes: the card crops the top of scene 0, which reads on its own.
+const { copy } = Astro.props;
+const label = (key: string) => copy.labels[key] ?? '';
+
+/*
+ * What each scene shows besides the chat. Scene order follows the copy:
+ * 0 buffers around schools, 1 a print layout, 2 a question about a raster.
+ */
+type Setup = {
+  buffer: 'new' | 'on' | 'off';
+  elevation: boolean;
+  overlay?: 'layout' | 'info';
+};
+const setups: Setup[] = [
+  { buffer: 'new', elevation: false },
+  { buffer: 'on', elevation: false, overlay: 'layout' },
+  { buffer: 'off', elevation: true, overlay: 'info' },
+];
+const setupFor = (index: number): Setup => setups[index] ?? { buffer: 'off', elevation: false };
+
+// Map geometry in a 320 × 340 viewBox. Kept near the middle so cropped layouts still read.
+const river = 'M336 18C286 52 268 104 232 140S136 214 84 244S10 318 -16 356';
+const parks = [
+  'M30 70C52 60 92 58 104 66L112 108C96 122 70 128 52 126C36 118 28 96 30 70Z',
+  'M168 158C186 150 214 152 226 162L222 196C206 206 184 204 172 196Z',
+  'M206 262C232 252 270 256 296 268L292 308C262 318 226 314 208 300Z',
+  'M44 282C58 274 82 276 90 286L84 310C70 316 52 314 44 304Z',
+];
+const majorRoads = ['M-10 160C90 150 200 134 330 122', 'M146 -10C156 100 168 220 182 350'];
+const minorRoads = [
+  'M-10 62L330 42',
+  'M-10 252L330 232',
+  'M64 -10L80 350',
+  'M254 -10L272 350',
+  'M182 252C210 286 240 300 330 312',
+];
+const lanes = [
+  'M80 108L152 102',
+  'M166 196L262 188',
+  'M210 -10L220 128',
+  'M-10 206L72 200',
+  'M98 252L108 350',
+  'M272 160L330 156',
+];
+const blocks = [
+  [86, 74, 54, 70],
+  [168, 56, 78, 62],
+  [92, 168, 48, 72],
+  [192, 132, 56, 20],
+  [276, 52, 40, 64],
+  [276, 140, 40, 84],
+  [96, 262, 46, 40],
+];
+const schools: [number, number][] = [
+  [112, 122],
+  [206, 104],
+  [238, 206],
+  [122, 222],
+];
+
+// An elevation raster in five classes, drawn as visible pixels: a valley along the river, hills to either side.
+const valley = [
+  [336, 18],
+  [286, 60],
+  [232, 140],
+  [184, 180],
+  [136, 214],
+  [84, 244],
+  [40, 280],
+  [-16, 356],
+];
+const fromRiver = (x: number, y: number) =>
+  Math.min(
+    ...valley.slice(1).map(([bx, by], i) => {
+      const [ax, ay] = valley[i];
+      const t = Math.max(
+        0,
+        Math.min(
+          1,
+          ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / ((bx - ax) ** 2 + (by - ay) ** 2),
+        ),
+      );
+      return Math.hypot(x - ax - t * (bx - ax), y - ay - t * (by - ay));
+    }),
+  );
+const hill = (x: number, y: number, cx: number, cy: number, r: number) =>
+  Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * r ** 2));
+const cell = 16;
+const raster: { x: number; y: number; k: number }[] = [];
+for (let row = 0; row < 22; row += 1)
+  for (let col = 0; col < 20; col += 1) {
+    const x = col * cell + cell / 2;
+    const y = row * cell + cell / 2;
+    const height =
+      Math.min(1, fromRiver(x, y) / 170) * 0.75 +
+      0.35 * hill(x, y, 50, 40, 55) +
+      0.3 * hill(x, y, 290, 300, 60) +
+      0.04 * Math.sin(x * 0.11 + y * 0.07);
+    raster.push({
+      x: col * cell,
+      y: row * cell,
+      k: Math.max(1, Math.min(5, Math.ceil(height * 5))),
+    });
+  }
+
+const tools = [3, 4, 3, 2];
+---
+
+<div class="demo-window qc" style="--demo-width: 62">
+  <div class="demo-titlebar">
+    <span class="demo-title">{copy.windowTitle}</span>
+    <span class="demo-controls">
+      <i></i>
+      <i></i>
+      <i></i>
+    </span>
+  </div>
+  <div class="qc-toolbar">
+    {tools.map((count) => (
+      <span class="qc-tool-group">
+        {Array.from({ length: count }, () => (
+          <i />
+        ))}
+      </span>
+    ))}
+    <span class="qc-tool-group qc-tool-end">
+      <i class="qc-tool-active" />
+    </span>
+  </div>
+
+  {copy.scenes.map((scene, index) => {
+    const setup = setupFor(index);
+    const steps = scene.steps ?? [];
+    // Delays: the query types first, then each step and the reply follow.
+    const stepOrder = steps.map((_, position) => position + 2);
+    const doneAt = stepOrder[stepOrder.length - 1] ?? 1;
+    const replyAt = doneAt + 1;
+    const showBuffer = setup.buffer !== 'off';
+    const layers = [
+      {
+        name: label('layerBuffer'),
+        kind: 'buffer',
+        on: showBuffer,
+        fresh: setup.buffer === 'new',
+      },
+      { name: label('layerSchools'), kind: 'point', on: true },
+      { name: label('layerRoads'), kind: 'line', on: true },
+      { name: label('layerParks'), kind: 'polygon', on: true },
+      { name: label('layerRiver'), kind: 'water', on: true },
+      {
+        name: label('layerElevation'),
+        kind: 'raster',
+        on: setup.elevation,
+        selected: setup.elevation,
+      },
+    ].filter((layer) => layer.name);
+
+    return (
+      <div class="qc-body" data-scene={index} hidden={index > 0}>
+        <aside class="qc-layers">
+          <p class="qc-dock-title">{label('layers')}</p>
+          <span class="qc-layers-tools">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          <ul>
+            {layers.map((layer) => (
+              <li
+                class:list={[
+                  'qc-layer',
+                  layer.fresh && 'qc-layer-new d-in',
+                  layer.selected && 'qc-layer-selected',
+                ]}
+                style={layer.fresh ? `--d:${doneAt}` : undefined}
+              >
+                <span class:list={['qc-check', layer.on && 'is-on']}>
+                  {layer.on && (
+                    <svg viewBox="0 0 10 10">
+                      <path d="M2.2 5.2 4.2 7.2 7.8 3" />
+                    </svg>
+                  )}
+                </span>
+                <svg class="qc-swatch" viewBox="0 0 14 14">
+                  {layer.kind === 'point' && <circle class="qc-school" cx="7" cy="7" r="3.4" />}
+                  {layer.kind === 'line' && (
+                    <>
+                      <path class="qc-road-casing" d="M1 10 13 4" />
+                      <path class="qc-road" d="M1 10 13 4" />
+                    </>
+                  )}
+                  {layer.kind === 'polygon' && (
+                    <rect class="qc-park" x="1.5" y="2.5" width="11" height="9" rx="2" />
+                  )}
+                  {layer.kind === 'water' && <path class="qc-river" d="M0 11C5 11 7 3 14 3" />}
+                  {layer.kind === 'buffer' && (
+                    <rect class="qc-buffer" x="1.5" y="2.5" width="11" height="9" rx="4.5" />
+                  )}
+                  {layer.kind === 'raster' && (
+                    <>
+                      <rect class="qc-e2" x="1" y="1" width="6" height="6" />
+                      <rect class="qc-e4" x="7" y="1" width="6" height="6" />
+                      <rect class="qc-e1" x="1" y="7" width="6" height="6" />
+                      <rect class="qc-e3" x="7" y="7" width="6" height="6" />
+                    </>
+                  )}
+                </svg>
+                <span class="qc-layer-name">{layer.name}</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        <div class="qc-map">
+          <svg class="qc-map-svg" viewBox="0 0 320 340" preserveAspectRatio="xMidYMid slice">
+            <rect class="qc-land" width="320" height="340" />
+            {blocks.map(([x, y, w, h]) => (
+              <rect class="qc-block" x={x} y={y} width={w} height={h} rx="3" />
+            ))}
+            {setup.elevation && (
+              <g class="qc-raster">
+                {raster.map((pixel) => (
+                  <rect
+                    class={`qc-e${pixel.k}`}
+                    x={pixel.x}
+                    y={pixel.y}
+                    width={cell}
+                    height={cell}
+                  />
+                ))}
+              </g>
+            )}
+            {lanes.map((d) => (
+              <path class="qc-lane" d={d} />
+            ))}
+            <path class="qc-river" d={river} />
+            {parks.map((d) => (
+              <path class="qc-park" d={d} />
+            ))}
+            {[...minorRoads, ...majorRoads].map((d) => (
+              <path class:list={['qc-road-casing', majorRoads.includes(d) && 'qc-major']} d={d} />
+            ))}
+            {[...minorRoads, ...majorRoads].map((d) => (
+              <path class:list={['qc-road', majorRoads.includes(d) && 'qc-major']} d={d} />
+            ))}
+            {showBuffer && (
+              <g
+                class:list={['qc-buffers', setup.buffer === 'new' && 'qc-grow']}
+                style={`--d:${doneAt}`}
+              >
+                {schools.map(([x, y]) => (
+                  <circle class="qc-buffer" cx={x} cy={y} r="34" />
+                ))}
+              </g>
+            )}
+            {schools.map(([x, y]) => (
+              <circle class="qc-school" cx={x} cy={y} r="4.2" />
+            ))}
+          </svg>
+
+          {setup.overlay === 'layout' && (
+            <div class="qc-sheet-stage qc-fade" style={`--d:${stepOrder[1] ?? 2}`}>
+              <div class="qc-sheet d-in">
+                <div class="qc-sheet-map">
+                  <svg viewBox="0 0 320 340" preserveAspectRatio="xMidYMid slice">
+                    <rect class="qc-land" width="320" height="340" />
+                    <path class="qc-river" d={river} />
+                    {parks.map((d) => (
+                      <path class="qc-park" d={d} />
+                    ))}
+                    {[...minorRoads, ...majorRoads].map((d) => (
+                      <path class="qc-road-casing" d={d} />
+                    ))}
+                    {[...minorRoads, ...majorRoads].map((d) => (
+                      <path class="qc-road" d={d} />
+                    ))}
+                    {schools.map(([x, y]) => (
+                      <circle class="qc-buffer" cx={x} cy={y} r="34" />
+                    ))}
+                    {schools.map(([x, y]) => (
+                      <circle class="qc-school" cx={x} cy={y} r="5" />
+                    ))}
+                  </svg>
+                </div>
+                <div class="qc-legend">
+                  <span class="qc-legend-title">{label('legend')}</span>
+                  {[
+                    ['point', label('layerSchools')],
+                    ['buffer', label('layerBuffer')],
+                    ['line', label('layerRoads')],
+                    ['polygon', label('layerParks')],
+                  ].map(([kind, name]) => (
+                    <span class="qc-legend-row">
+                      <i class={`qc-key qc-key-${kind}`} />
+                      {name}
+                    </span>
+                  ))}
+                </div>
+                <div class="qc-scalebar">
+                  <span>{label('scale')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {setup.overlay === 'info' && (
+            <div class="qc-info d-in" style={`--d:${doneAt}`}>
+              <p class="qc-info-title">
+                <svg class="qc-swatch" viewBox="0 0 14 14">
+                  <rect class="qc-e2" x="1" y="1" width="6" height="6" />
+                  <rect class="qc-e4" x="7" y="1" width="6" height="6" />
+                  <rect class="qc-e1" x="1" y="7" width="6" height="6" />
+                  <rect class="qc-e3" x="7" y="7" width="6" height="6" />
+                </svg>
+                {label('layerElevation')}
+              </p>
+              <dl>
+                <div>
+                  <dt>{label('crs')}</dt>
+                  <dd>
+                    {label('crsValue')}
+                    <span>{label('crsName')}</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{label('pixel')}</dt>
+                  <dd>{label('pixelValue')}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+
+        <section class="qc-chat">
+          <p class="qc-chat-title">
+            <svg class="qc-mark" viewBox="0 0 16 16">
+              <path d="M8 1.5C8.6 5.4 10.6 7.4 14.5 8 10.6 8.6 8.6 10.6 8 14.5 7.4 10.6 5.4 8.6 1.5 8 5.4 7.4 7.4 5.4 8 1.5Z" />
+            </svg>
+            <span>{label('panel')}</span>
+            <span class="qc-chat-controls">
+              <i />
+              <i />
+            </span>
+          </p>
+          <div class="qc-thread">
+            <p class="qc-user">
+              <span class="d-type">{scene.query}</span>
+            </p>
+            {steps.length > 0 && (
+              <ol class="qc-steps qc-fade" style={`--d:${stepOrder[0]}`}>
+                {steps.map((step, position) => (
+                  <li class="qc-step d-in" style={`--d:${stepOrder[position]}`}>
+                    <svg class="qc-step-icon" viewBox="0 0 16 16">
+                      <circle class="qc-done-ring" cx="8" cy="8" r="6.6" />
+                      <path class="qc-done-mark" d="M5 8.2 7.1 10.2 11 6" />
+                    </svg>
+                    <span class="qc-step-body">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {scene.reply && (
+              <p class="qc-reply d-in" style={`--d:${replyAt}`}>
+                {scene.reply}
+              </p>
+            )}
+          </div>
+          <div class="qc-composer">
+            <span>{copy.placeholder}</span>
+            <span class="qc-send">
+              <svg viewBox="0 0 16 16">
+                <path d="M8 12.5v-9M4.2 7.2 8 3.4l3.8 3.8" />
+              </svg>
+            </span>
+          </div>
+          <p class="qc-status">
+            <i />
+            {label('status')}
+          </p>
+        </section>
+      </div>
+    );
+  })}
+</div>
+
+<style>
+  /* Map colours stay inside the demo: warm, muted and quiet on ivory. */
+  .qc {
+    --qc-land: #f3efe5;
+    --qc-block: #ebe5d7;
+    --qc-water: #c8dcd6;
+    --qc-water-edge: #b3cdc6;
+    --qc-park: #dce6cd;
+    --qc-park-edge: #c3d3ad;
+    --qc-road: #fffdf8;
+    --qc-road-casing: #dcd3c1;
+    --qc-school: #b4673f;
+    --qc-e1: #dce6da;
+    --qc-e2: #e8e7d2;
+    --qc-e3: #e6d8b9;
+    --qc-e4: #dbc39f;
+    --qc-e5: #cbaa85;
+  }
+
+  /* Toolbar: a quiet hint of QGIS, with the QCopilots button switched on at the end. */
+  .qc-toolbar {
+    display: flex;
+    height: 2.3em;
+    align-items: center;
+    gap: 0.9em;
+    padding: 0 0.9em;
+    border-bottom: 1px solid var(--line);
+    background: var(--ivory-50);
+  }
+  .qc-tool-group {
+    display: flex;
+    gap: 0.4em;
+    padding-right: 0.9em;
+    border-right: 1px solid var(--line);
+  }
+  .qc-tool-group i,
+  .qc-layers-tools i,
+  .qc-chat-controls i {
+    width: 1em;
+    height: 1em;
+    border-radius: 0.25em;
+    background: var(--oat-200);
+  }
+  .qc-tool-end {
+    margin-left: auto;
+    padding-right: 0;
+    border-right: 0;
+  }
+  .qc-tool-group .qc-tool-active {
+    box-shadow: inset 0 0 0 1px var(--product-accent);
+    background: var(--product-wash);
+  }
+
+  .qc-body {
+    display: grid;
+    height: 30em;
+    grid-template-columns: 11.5em minmax(0, 1fr) 21em;
+  }
+
+  /* Layers panel */
+  .qc-layers {
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+    background: var(--ivory-50);
+    font-size: 0.76em;
+  }
+  .qc-dock-title,
+  .qc-chat-title {
+    display: flex;
+    height: 2.6em;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0;
+    padding: 0 1em;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-700);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .qc-layers-tools {
+    display: flex;
+    gap: 0.45em;
+    padding: 0.6em 1em;
+  }
+  .qc-layers-tools i {
+    width: 0.95em;
+    height: 0.95em;
+  }
+  .qc-layers ul {
+    display: grid;
+    gap: 0.1em;
+    margin: 0;
+    padding: 0 0.45em;
+    list-style: none;
+  }
+  .qc-layer {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.38em 0.55em;
+    border-radius: 0.45em;
+    color: var(--ink-700);
+    white-space: nowrap;
+  }
+  .qc-layer-new,
+  .qc-layer-selected {
+    background: var(--product-wash);
+    color: var(--ink-900);
+  }
+  .qc-layer-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .qc-check {
+    display: grid;
+    width: 1.05em;
+    height: 1.05em;
+    flex: none;
+    place-items: center;
+    border: 1px solid var(--oat-300);
+    border-radius: 0.25em;
+    background: var(--paper);
+  }
+  .qc-check.is-on {
+    border-color: var(--product-accent-ink);
+    background: var(--product-accent-ink);
+  }
+  .qc-check svg {
+    width: 0.85em;
+    height: 0.85em;
+    fill: none;
+    stroke: var(--paper);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+  }
+  .qc-swatch {
+    width: 1.2em;
+    height: 1.2em;
+    flex: none;
+  }
+
+  /* Map canvas */
+  .qc-map {
+    position: relative;
+    overflow: hidden;
+    background: var(--qc-land);
+  }
+  .qc-map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .qc-land {
+    fill: var(--qc-land);
+  }
+  .qc-block {
+    fill: var(--qc-block);
+  }
+  .qc-river {
+    fill: none;
+    stroke: var(--qc-water);
+    stroke-linecap: round;
+    stroke-width: 15;
+  }
+  .qc-swatch .qc-river {
+    stroke-width: 3.2;
+  }
+  .qc-park {
+    fill: var(--qc-park);
+    stroke: var(--qc-park-edge);
+    stroke-width: 1;
+  }
+  .qc-road-casing,
+  .qc-road {
+    fill: none;
+    stroke-linecap: round;
+  }
+  .qc-road-casing {
+    stroke: var(--qc-road-casing);
+    stroke-width: 4.6;
+  }
+  .qc-road {
+    stroke: var(--qc-road);
+    stroke-width: 2.8;
+  }
+  .qc-lane {
+    fill: none;
+    stroke: var(--qc-road);
+    stroke-linecap: round;
+    stroke-width: 1.6;
+  }
+  .qc-road-casing.qc-major {
+    stroke-width: 7.4;
+  }
+  .qc-road.qc-major {
+    stroke-width: 5.2;
+  }
+  .qc-swatch .qc-road-casing {
+    stroke-width: 4.4;
+  }
+  .qc-swatch .qc-road {
+    stroke-width: 2.4;
+  }
+  .qc-school {
+    fill: var(--qc-school);
+    stroke: var(--paper);
+    stroke-width: 1.8;
+  }
+  .qc-swatch .qc-school {
+    stroke-width: 1.2;
+  }
+  .qc-buffer {
+    fill: color-mix(in srgb, var(--product-accent) 14%, transparent);
+    stroke: var(--product-accent);
+    stroke-width: 1.3;
+  }
+  .qc-swatch .qc-buffer {
+    stroke-width: 1;
+  }
+  .qc-e1 {
+    fill: var(--qc-e1);
+  }
+  .qc-e2 {
+    fill: var(--qc-e2);
+  }
+  .qc-e3 {
+    fill: var(--qc-e3);
+  }
+  .qc-e4 {
+    fill: var(--qc-e4);
+  }
+  .qc-e5 {
+    fill: var(--qc-e5);
+  }
+  .qc-raster {
+    shape-rendering: crispEdges;
+  }
+
+  /* Print layout preview */
+  .qc-sheet-stage {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--ivory-100) 62%, transparent);
+  }
+  .qc-sheet {
+    position: relative;
+    display: grid;
+    width: 84%;
+    aspect-ratio: 1.414;
+    padding: 0.55em;
+    border: 1px solid var(--line);
+    border-radius: 0.2em;
+    background: var(--paper);
+    box-shadow: var(--shadow-2);
+    color: var(--ink-700);
+  }
+  .qc-sheet-map {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--oat-300);
+  }
+  .qc-sheet-map svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .qc-legend {
+    position: absolute;
+    right: 1.1em;
+    bottom: 1.1em;
+    display: grid;
+    gap: 0.25em;
+    padding: 0.55em 0.7em;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font-size: 0.5em;
+    line-height: 1.2;
+  }
+  .qc-legend-title {
+    color: var(--ink-900);
+    font-weight: 600;
+  }
+  .qc-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    white-space: nowrap;
+  }
+  .qc-key {
+    width: 1.1em;
+    height: 0.8em;
+    border-radius: 0.15em;
+  }
+  .qc-key-point {
+    width: 0.75em;
+    height: 0.75em;
+    margin-inline: 0.175em;
+    border-radius: 50%;
+    background: var(--qc-school);
+  }
+  .qc-key-buffer {
+    border: 1px solid var(--product-accent);
+    border-radius: 0.4em;
+    background: color-mix(in srgb, var(--product-accent) 14%, transparent);
+  }
+  .qc-key-line {
+    height: 0.35em;
+    border: 1px solid var(--qc-road-casing);
+    background: var(--qc-road);
+  }
+  .qc-key-polygon {
+    border: 1px solid var(--qc-park-edge);
+    background: var(--qc-park);
+  }
+  .qc-scalebar {
+    position: absolute;
+    bottom: 1.1em;
+    left: 1.1em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.35em 0.5em;
+    background: color-mix(in srgb, var(--paper) 85%, transparent);
+    font-size: 0.5em;
+    line-height: 1;
+  }
+  /* Layer information card */
+  .qc-info {
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    width: 15em;
+    max-width: calc(100% - 2em);
+    padding: 0.8em 0.95em;
+    border: 1px solid var(--line);
+    border-radius: 0.7em;
+    background: var(--paper);
+    box-shadow: var(--shadow-2);
+    font-size: 0.74em;
+  }
+  .qc-info-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0 0 0.6em;
+    color: var(--ink-900);
+    font-weight: 600;
+  }
+  .qc-info dl {
+    display: grid;
+    gap: 0.5em;
+    margin: 0;
+  }
+  .qc-info dl div {
+    display: grid;
+    gap: 0.05em;
+  }
+  .qc-info dt {
+    color: var(--ink-500);
+    font-size: 0.9em;
+  }
+  .qc-info dd {
+    margin: 0;
+    color: var(--ink-900);
+    font-weight: 600;
+  }
+  .qc-info dd span {
+    display: block;
+    color: var(--ink-700);
+    font-weight: 400;
+  }
+
+  /* QCopilots panel */
+  .qc-chat {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    border-left: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .qc-chat-title {
+    font-size: 0.76em;
+    color: var(--ink-900);
+  }
+  .qc-mark {
+    width: 1.15em;
+    height: 1.15em;
+    fill: var(--product-accent);
+  }
+  .qc-chat-controls {
+    display: flex;
+    gap: 0.6em;
+    margin-left: auto;
+  }
+  .qc-chat-controls i {
+    width: 0.8em;
+    height: 0.8em;
+  }
+  .qc-thread {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.85em;
+    overflow: hidden;
+    padding: 1.05em 1em 0.8em;
+    font-size: 0.8em;
+    line-height: 1.5;
+  }
+  .qc-user,
+  .qc-reply {
+    margin: 0;
+    padding: 0.6em 0.9em;
+    color: var(--ink-900);
+  }
+  .qc-user {
+    max-width: 90%;
+    align-self: flex-end;
+    border-radius: 1.1em 1.1em 0.35em 1.1em;
+    background: var(--ivory-100);
+  }
+  .qc-user .d-type {
+    display: block;
+  }
+  .qc-steps {
+    display: grid;
+    gap: 0.55em;
+    margin: 0;
+    padding: 0.75em 0.85em;
+    border: 1px solid var(--line);
+    border-radius: 0.85em;
+    background: var(--ivory-50);
+    list-style: none;
+    font-size: 0.94em;
+  }
+  .qc-step {
+    display: grid;
+    grid-template-columns: 1.2em minmax(0, 1fr);
+    align-items: start;
+    gap: 0.55em;
+    color: var(--ink-700);
+  }
+  .qc-step-icon {
+    width: 1.2em;
+    height: 1.2em;
+    margin-top: 0.15em;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .qc-done-ring {
+    fill: var(--product-wash);
+    stroke: none;
+  }
+  .qc-done-mark {
+    stroke: var(--product-accent-ink);
+    stroke-width: 1.6;
+  }
+  .qc-step-body {
+    display: grid;
+    gap: 0.45em;
+    justify-items: start;
+  }
+  .qc-reply {
+    max-width: 94%;
+    align-self: flex-start;
+    border-radius: 1.1em 1.1em 1.1em 0.35em;
+    background: var(--product-wash);
+  }
+  .qc-composer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6em;
+    margin: 0 1em;
+    padding: 0.45em 0.45em 0.45em 0.9em;
+    border: 1px solid var(--oat-300);
+    border-radius: 0.9em;
+    color: var(--ink-500);
+    font-size: 0.78em;
+  }
+  .qc-send {
+    display: grid;
+    width: 1.9em;
+    height: 1.9em;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--product-accent-ink);
+  }
+  .qc-send svg {
+    width: 1em;
+    height: 1em;
+    fill: none;
+    stroke: var(--paper);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+  }
+  .qc-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0;
+    padding: 0.65em 1.4em 0.8em;
+    color: var(--ink-500);
+    font-size: 0.68em;
+    white-space: nowrap;
+  }
+  .qc-status i {
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    background: var(--product-accent);
+  }
+
+  /* Buffers grow softly out of each school while the scene plays. */
+  @keyframes qc-grow {
+    from {
+      opacity: 0;
+      transform: scale(0.55);
+    }
+  }
+  .qc-buffers.qc-grow .qc-buffer {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  :global(.motion-ok .demo.is-playing) [data-scene]:not([hidden]) .qc-grow .qc-buffer {
+    animation: qc-grow 900ms var(--ease-out) both;
+    animation-delay: calc(var(--d, 0) * 700ms + 300ms);
+  }
+  /* Containers that should appear with their first item, without moving. */
+  @keyframes qc-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  :global(.motion-ok .demo.is-playing) [data-scene]:not([hidden]) .qc-fade {
+    animation: qc-fade var(--dur-3) var(--ease-out) both;
+    animation-delay: calc(var(--d, 0) * 700ms + 300ms);
+  }
+
+  /* Medium stages, including home cards: map and panel, no Layers panel. */
+  @container (max-width: 800px) {
+    .qc {
+      --demo-width: 46 !important;
+    }
+    .qc-body {
+      grid-template-columns: minmax(0, 1fr) 21em;
+    }
+    .qc-layers {
+      display: none;
+    }
+  }
+
+  /* Phones: a slim map above a readable panel. */
+  @container (max-width: 480px) {
+    .qc {
+      --demo-width: 24 !important;
+    }
+    .qc-toolbar {
+      display: none;
+    }
+    .qc-body {
+      height: 36em;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 9.5em minmax(0, 1fr);
+    }
+    .qc-chat {
+      border-top: 1px solid var(--line);
+      border-left: 0;
+    }
+    .qc-thread {
+      font-size: 0.86em;
+    }
+    .qc-sheet {
+      width: auto;
+      height: 86%;
+      padding: 0.35em;
+    }
+    .qc-legend,
+    .qc-scalebar {
+      display: none;
+    }
+    .qc-info {
+      top: 0.6em;
+      right: 0.6em;
+      width: 15em;
+      padding: 0.55em 0.75em;
+    }
+    .qc-info-title {
+      margin-bottom: 0.35em;
+    }
+    .qc-info dl {
+      gap: 0.2em;
+    }
+    .qc-info dl div {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8em;
+    }
+    .qc-info dd span {
+      display: none;
+    }
+  }
+</style>

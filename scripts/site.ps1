@@ -1,6 +1,6 @@
 # Compatible with Windows PowerShell 5.1. No global tools or PATH changes.
-[CmdletBinding()]
-param([Parameter(ValueFromRemainingArguments = $true)][string[]]$SiteArguments)
+# Plain $args (no param block) forwards every argument as typed, including "--", -w or --with-deps.
+$SiteArguments = @($args)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $SiteRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

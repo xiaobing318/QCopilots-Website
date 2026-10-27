@@ -1,8 +1,19 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import {
+  chineseOutsideZh,
+  collectConsoleErrors,
+  collectRequests,
+  horizontalOverflow,
+} from '../shared/checks';
+
+/** Adds a unique query so GitHub Pages' CDN cannot answer with an older copy of the page. */
+const fresh = (path: string) => `${path}${path.includes('?') ? '&' : '?'}visit=${Date.now()}`;
 
 /** Site paths relative to the base URL, read from the published sitemap. */
 async function sitePaths(request: APIRequestContext, baseURL: string) {
-  const response = await request.get('sitemap.xml');
+  const response = await request.get(fresh('sitemap.xml'), {
+    headers: { 'Cache-Control': 'no-cache' },
+  });
   expect(response.status()).toBe(200);
   const basePath = new URL(baseURL).pathname;
   return [...(await response.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, location]) => {
@@ -14,21 +25,13 @@ async function sitePaths(request: APIRequestContext, baseURL: string) {
 
 /** Collects what a visitor would notice: script errors, broken files and requests to other sites. */
 function watch(page: Page, origin: string) {
-  const problems: string[] = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') problems.push(`console error: ${message.text()}`);
-  });
-  page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
-  page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (['http:', 'https:'].includes(url.protocol) && url.origin !== origin)
-      problems.push(`third-party request: ${request.url()}`);
-  });
-  page.on('response', (response) => {
-    if (new URL(response.url()).origin === origin && response.status() >= 400)
-      problems.push(`HTTP ${response.status()}: ${response.url()}`);
-  });
-  return problems;
+  const errors = collectConsoleErrors(page);
+  const requests = collectRequests(page, origin);
+  return () => [
+    ...errors,
+    ...requests.failed,
+    ...requests.thirdParty.map((url) => `third-party request: ${url}`),
+  ];
 }
 
 test('every page in the sitemap opens cleanly', async ({ page, request, baseURL }) => {
@@ -50,13 +53,21 @@ test('every page in the sitemap opens cleanly', async ({ page, request, baseURL 
         new URL(path, baseURL).href,
       );
       await page.evaluate(() => document.fonts.ready);
-      const sideways = await page.evaluate(
-        () => document.documentElement.scrollWidth - window.innerWidth,
-      );
-      expect(sideways, `${path} scrolls sideways`).toBeLessThanOrEqual(1);
+      const { overflow, culprits } = await horizontalOverflow(page);
+      expect(overflow, `${path} scrolls sideways: ${culprits.join(', ')}`).toBeLessThanOrEqual(1);
     });
   }
-  expect(problems).toEqual([]);
+  expect(problems()).toEqual([]);
+});
+
+test('the entry page follows the browser language when nothing is stored', async ({
+  page,
+  locale,
+}) => {
+  const expected = locale?.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  await page.goto(fresh('./'));
+  await expect(page).toHaveURL(new RegExp(`/${expected}/\\?visit=\\d+$`));
+  await expect(page.locator('html')).toHaveAttribute('lang', expected === 'zh' ? 'zh-CN' : 'en');
 });
 
 test('the entry page opens a language home and remembers a choice', async ({ page }) => {
@@ -80,6 +91,34 @@ test('switching language keeps the product and chapter', async ({ page, request,
     await expect(page.locator('#faq')).toBeInViewport();
     await page.getByTestId('language-switch').click();
     await expect(page).toHaveURL(new RegExp(`/${path}#faq$`));
+  }
+});
+
+test('English pages show no Chinese outside language-marked elements', async ({
+  page,
+  request,
+  baseURL,
+}) => {
+  const paths = (await sitePaths(request, baseURL!)).filter((path) => path.startsWith('en/'));
+  expect(paths.length).toBeGreaterThan(0);
+  // Pages kept out of the sitemap, such as the license notices, are reached from the footer.
+  await page.goto(fresh('en/'));
+  const site = new URL(baseURL!);
+  const footerLinks = await page
+    .locator('footer a[href]')
+    .evaluateAll((links) => links.map((link) => (link as HTMLAnchorElement).href));
+  for (const href of footerLinks.map((link) => new URL(link))) {
+    if (href.origin !== site.origin || !href.pathname.startsWith(site.pathname)) continue;
+    const path = href.pathname.slice(site.pathname.length);
+    if (path.startsWith('en/') && !paths.includes(path)) paths.push(path);
+  }
+  for (const path of paths) {
+    await test.step(path, async () => {
+      const response = await page.goto(fresh(path));
+      expect(response?.status(), path).toBe(200);
+      await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+      expect(await chineseOutsideZh(page), path).toEqual([]);
+    });
   }
 });
 

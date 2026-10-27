@@ -1,0 +1,54 @@
+---
+import type { Locale } from '../../content/types.ts';
+import { products } from '../../content/products.ts';
+import { ui } from '../../content/ui.ts';
+import { asset, route } from '../../lib/site.mjs';
+import Icon from '../Icon.astro';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].home;
+---
+
+<section class="closing" aria-labelledby="closing-title">
+  <div class="container-narrow closing-inner">
+    <h2 id="closing-title">{t.closingTitle}</h2>
+    <p class="lead">{t.closingLead}</p>
+    <div class="actions">
+      {products.map((product, index) => (
+        <a
+          class:list={['button', index > 0 && 'button-secondary']}
+          href={route(locale, `products/${product.id}`)}
+        >
+          <img src={asset(product.icon.src)} width="20" height="20" alt="" />
+          {product.locales[locale].name}
+          <Icon name="arrow" class="icon-arrow" />
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .closing {
+    padding-block: var(--section-y) 0;
+  }
+  .closing-inner {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-5);
+    text-align: center;
+  }
+  .lead {
+    margin-inline: auto;
+  }
+  .actions {
+    justify-content: center;
+    margin-top: var(--space-3);
+  }
+  .button img {
+    width: 20px;
+    height: 20px;
+  }
+</style>

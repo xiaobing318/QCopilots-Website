@@ -1,0 +1,95 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { product, locale } = Astro.props;
+const privacy = product.locales[locale].privacy;
+const t = ui[locale].product;
+---
+
+<section id="privacy" class="section" aria-labelledby="privacy-title">
+  <div class="container privacy-panel">
+    <div class="privacy-intro">
+      <p class="eyebrow">{t.sections.privacy}</p>
+      <h2 id="privacy-title">{privacy.title}</h2>
+      <p class="lead">{privacy.intro}</p>
+    </div>
+    <div class="privacy-points">
+      <ul>
+        {privacy.points.map((point) => (
+          <li>
+            <Icon name="check" />
+            <div>
+              <h3>{point.title}</h3>
+              <p>{point.description}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {privacy.note && <p class="note">{privacy.note}</p>}
+    </div>
+  </div>
+</section>
+
+<style>
+  .privacy-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: var(--space-8);
+    padding: clamp(var(--space-6), 5vw, var(--space-9));
+    border-radius: var(--radius-xl);
+    background: var(--oat-200);
+  }
+  .privacy-intro {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+  }
+  .privacy-intro .eyebrow {
+    margin: 0;
+  }
+  ul {
+    display: grid;
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: flex;
+    gap: var(--space-4);
+  }
+  li > :global(.icon) {
+    width: 24px;
+    height: 24px;
+    margin-top: 0.2em;
+    color: var(--product-accent-ink);
+  }
+  h3 {
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    font-weight: 600;
+  }
+  li p {
+    color: var(--text);
+  }
+  .note {
+    margin-top: var(--space-6);
+    padding: var(--space-4) var(--space-5);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-m) var(--radius-m) 0;
+    background: var(--ivory-50);
+    color: var(--ink-700);
+    font-size: var(--text-sm);
+  }
+  @media (max-width: 900px) {
+    .privacy-panel {
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+    }
+  }
+</style>

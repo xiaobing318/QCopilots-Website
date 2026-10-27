@@ -1,0 +1,72 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+import SectionIntro from '../SectionIntro.astro';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { product, locale } = Astro.props;
+const content = product.locales[locale];
+const t = ui[locale].product;
+---
+
+<section id="features" class="section" aria-labelledby="features-title">
+  <div class="container">
+    <SectionIntro id="features-title" eyebrow={t.sections.features} title={t.featuresTitle} />
+    <ul class="feature-grid">
+      {content.highlights.map((highlight) => (
+        <li>
+          <span class="feature-icon">
+            <Icon name={highlight.icon} />
+          </span>
+          <h3>{highlight.title}</h3>
+          <p>{highlight.description}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--paper);
+    box-shadow: var(--shadow-1);
+  }
+  .feature-icon {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-2);
+    border-radius: var(--radius-m);
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+  }
+  .feature-icon :global(.icon) {
+    width: 24px;
+    height: 24px;
+  }
+  h3 {
+    font-size: var(--text-xl);
+  }
+  p {
+    color: var(--text);
+  }
+</style>

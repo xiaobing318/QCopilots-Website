@@ -1,0 +1,87 @@
+---
+import type { DemoCopy } from '../../content/types.ts';
+import Icon from '../Icon.astro';
+interface Props {
+  copy: DemoCopy;
+  variant: 'full' | 'thumb';
+}
+const { copy } = Astro.props;
+---
+
+<!-- Fallback for products without a dedicated demo: a query, its steps or results, and a reply. -->
+<div class="demo-window generic-demo" style="--demo-width: 46">
+  <div class="demo-titlebar">
+    <span class="demo-title">{copy.windowTitle}</span>
+    <span class="demo-controls">
+      <i></i>
+      <i></i>
+      <i></i>
+    </span>
+  </div>
+  {copy.scenes.map((scene, index) => (
+    <div class="generic-body" data-scene={index} hidden={index > 0}>
+      <div class="generic-query">
+        <Icon name="search" />
+        <span class="d-type">{scene.query}</span>
+      </div>
+      <ul>
+        {(scene.steps ?? scene.results?.map((result) => result.title) ?? []).map(
+          (line, position) => (
+            <li class="d-in" style={`--d:${position + 1}`}>
+              <Icon name="check" />
+              {line}
+            </li>
+          ),
+        )}
+      </ul>
+      {scene.reply && (
+        <p class="generic-reply d-in" style={`--d:${(scene.steps?.length ?? 0) + 1}`}>
+          {scene.reply}
+        </p>
+      )}
+    </div>
+  ))}
+</div>
+
+<style>
+  .generic-body {
+    display: grid;
+    min-height: 22em;
+    align-content: start;
+    gap: 1.2em;
+    padding: 1.6em;
+  }
+  .generic-query {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.8em 1em;
+    border: 1px solid var(--oat-300);
+    border-radius: 0.8em;
+    color: var(--ink-900);
+  }
+  .generic-query :global(.icon) {
+    color: var(--product-accent);
+  }
+  ul {
+    display: grid;
+    gap: 0.6em;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+  }
+  li :global(.icon) {
+    color: var(--product-accent);
+  }
+  .generic-reply {
+    padding: 1em;
+    border-radius: 0.8em;
+    background: var(--product-wash);
+    color: var(--ink-900);
+  }
+</style>

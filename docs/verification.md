@@ -1,5 +1,41 @@
 # 实施与验证记录 / Implementation verification
 
+## 2026-10-26 暖色编辑风格改版 / Warm editorial redesign
+
+环境：Windows 11 Pro 10.0.26200 x64。本机没有预装 Node、npm 或 gh，全部命令通过 `scripts\site.cmd` 自动下载的便携版 Node 24.22.1 运行，这也验证了“在另一台机器上一键准备环境”的路径。
+
+Environment: Windows 11 Pro 10.0.26200 x64 with no Node, npm or gh installed. Every command ran through the portable Node 24.22.1 that `scripts\site.cmd` downloads, which exercises the "set up on another machine" path.
+
+### 改动 / What changed
+
+- 视觉改为暖色编辑风格：象牙色底、衬线标题、每个产品一种强调色，字体全部自托管。
+- 用代码绘制的中英文界面示意取代旧的 AI 插图。
+- 内容拆成每个产品一个文件，新增产品只需新增文件并注册。
+- 产品事实按两个源码仓库重新核对，修正了确认流程、图层顺序、显卡和时间格式等说法，见[产品事实记录](product-evidence.md)。
+- CI 在主分支检查通过后自动发布 Pages，随后 `pages-smoke` 任务以桌面和手机两种方式访问线上站点。
+- 新增 `scripts\site.cmd`，双击即可准备环境并打开预览。新增 `site run` 与 `site browsers` 命令。
+
+### 本机检查 / Local checks
+
+| 检查 / Check                                                | 结果 / Result                                                       |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| Prettier、ESLint、`astro check`、内容检查                   | 全部通过，0 错误                                                    |
+| 单元测试 `npm test`                                         | 通过                                                                |
+| 构建与 `test:built`，`BASE_PATH=/` 和 `/QCopilots-Website/` | 两种路径都通过，各 10 个 HTML 文档                                  |
+| Playwright e2e，Chromium 与 WebKit                          | 84 通过，10 个平台相关跳过                                          |
+| Playwright e2e，Firefox                                     | 本机无法启动 Firefox（Windows 并行配置错误），由 CI 在 Linux 上运行 |
+| 线上访问测试 `test:live`，旧版站点                          | 改版前的通用用例全部通过                                            |
+
+### 并行审查 / Parallel reviews
+
+三个只读子代理分别审查视觉与体验、产品事实、代码与 CI。主代理逐条核对后修复了：手机菜单同时显示两个图标、中文标题在词中断行、英文页面引号显示为全角、手机首屏被装饰图占据、确认流程措辞过度、底图位置描述错误、`aria-current` 取值无效、`site.ps1` 转发参数出错等问题。
+
+Three read-only subagents reviewed visual design, product facts, and code with CI. The main agent verified each finding and fixed them, including the double menu icon, mid-word Chinese heading breaks, full-width quotes on English pages, the decorative phone hero, overstated confirmation copy, the basemap position claim, an invalid `aria-current` value and argument forwarding in `site.ps1`.
+
+## 2026-10-23 首次交付（历史记录） / First delivery (historical)
+
+以下内容描述旧版设计，素材已在改版中移除。
+
 日期：2026-10-23。实际执行环境为 Windows 11 Pro，版本 10.0.26200，x64。运行时为 Node 24.22.1、npm 11.19.1，原生服务器为 Caddy 2.11.7。
 
 本文记录首次本地交付时的实现与验证状态。下文的测试数量、归档校验值、未提交状态及进程清理记录均属于该次交付，不代表后续提交的实时状态。此后已按用户要求提交并推送代码，启动远端 CI，并开展真实 Chrome 用户流程审查。后续结果与修复见 [Chrome 用户体验审查与远端 CI 记录](chrome-audit.md)。

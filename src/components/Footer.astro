@@ -1,0 +1,134 @@
+---
+import type { Locale } from '../content/types.ts';
+import { products } from '../content/products.ts';
+import { ui } from '../content/ui.ts';
+import { asset, route } from '../lib/site.mjs';
+interface Props {
+  locale: Locale;
+  slug?: string;
+}
+const { locale, slug = '' } = Astro.props;
+const t = ui[locale];
+---
+
+<footer class="site-footer">
+  <div class="footer-inner container">
+    <div class="footer-brand">
+      <a class="brand-mark" href={route(locale)}>
+        <img src={asset('/images/qcopilots-icon.svg')} width="28" height="28" alt="" />
+        <span>QCopilots</span>
+      </a>
+      <p>{t.footer.tagline}</p>
+    </div>
+    <nav class="footer-column" aria-label={t.footer.productsNav}>
+      <p class="footer-heading">{t.nav.products}</p>
+      {products.map((product) => (
+        <a href={route(locale, `products/${product.id}`)}>{product.locales[locale].name}</a>
+      ))}
+    </nav>
+    <div class="footer-column">
+      <p class="footer-heading">{t.nav.language}</p>
+      <a href={route('zh', slug)} data-locale="zh" lang="zh-CN" hreflang="zh-CN">
+        简体中文
+      </a>
+      <a href={route('en', slug)} data-locale="en" lang="en" hreflang="en">
+        English
+      </a>
+    </div>
+    <div class="footer-meta">
+      <a href={route(locale, 'licenses')}>{t.footer.licenses}</a>
+      <p>{t.footer.rights}</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Language links keep the visitor's query and chapter, and remember the choice for the entry page.
+  document.querySelectorAll<HTMLAnchorElement>('a[data-locale]').forEach((link) => {
+    const updateDestination = () => {
+      const url = new URL(link.href);
+      url.search = location.search;
+      url.hash = location.hash;
+      link.href = url.href;
+    };
+    updateDestination();
+    window.addEventListener('hashchange', updateDestination);
+    link.addEventListener('click', () => {
+      try {
+        localStorage.setItem('qcopilots-locale', link.dataset.locale || 'zh');
+      } catch {
+        /* Storage is optional. */
+      }
+    });
+  });
+</script>
+
+<style>
+  .site-footer {
+    margin-top: var(--section-y);
+    padding-block: var(--space-8) var(--space-7);
+    border-top: 1px solid var(--line);
+    background: var(--ivory-100);
+    font-size: var(--text-sm);
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--space-7) var(--space-6);
+  }
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    text-decoration: none;
+  }
+  .footer-brand p {
+    max-width: 22em;
+    margin-top: var(--space-3);
+    color: var(--text-muted);
+  }
+  .footer-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .footer-heading {
+    margin-bottom: var(--space-2);
+    color: var(--ink-900);
+    font-weight: 600;
+  }
+  .footer-column a,
+  .footer-meta a {
+    width: fit-content;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  .footer-column a:hover,
+  .footer-meta a:hover {
+    color: var(--ink-900);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+  .footer-meta {
+    display: flex;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--line);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+  @media (max-width: 767px) {
+    .footer-inner {
+      grid-template-columns: 1fr 1fr;
+    }
+    .footer-brand {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

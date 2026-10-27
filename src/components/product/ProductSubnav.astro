@@ -1,0 +1,109 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].product;
+const chapters = [
+  ['overview', t.sections.overview],
+  ['features', t.sections.features],
+  ['use-cases', t.sections.examples],
+  ['workflow', t.sections.workflow],
+  ['privacy', t.sections.privacy],
+  ['faq', t.sections.faq],
+  ['downloads', t.sections.downloads],
+] as const;
+---
+
+<nav class="product-subnav" aria-label={t.chapters}>
+  <div class="container">
+    {chapters.map(([id, label]) => (
+      <a href={`#${id}`}>{label}</a>
+    ))}
+  </div>
+</nav>
+
+<script>
+  // Keep the focused chapter link visible when tabbing through a scrolled chapter bar.
+  document.querySelectorAll<HTMLAnchorElement>('.product-subnav a').forEach((link) => {
+    link.addEventListener('focus', () => {
+      link.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+    });
+  });
+  // Mark the chapter currently in view.
+  const links = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('.product-subnav a')].map((link) => [
+      link.hash.slice(1),
+      link,
+    ]),
+  );
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        links.forEach((link, id) => {
+          if (id === entry.target.id) link.setAttribute('aria-current', 'location');
+          else link.removeAttribute('aria-current');
+        });
+      }
+    },
+    { rootMargin: '-45% 0px -50% 0px' },
+  );
+  links.forEach((_link, id) => {
+    const section = document.getElementById(id);
+    if (section) observer.observe(section);
+  });
+</script>
+
+<style>
+  .product-subnav {
+    position: sticky;
+    z-index: 40;
+    top: var(--header-height, 72px);
+    border-block: 1px solid var(--line);
+    background: color-mix(in srgb, var(--ivory-50) 92%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px);
+  }
+  .container {
+    display: flex;
+    justify-content: safe center;
+    gap: var(--space-1);
+    overflow-x: auto;
+    padding-block: var(--space-1);
+    scrollbar-width: none;
+  }
+  .container::-webkit-scrollbar {
+    display: none;
+  }
+  a {
+    display: inline-flex;
+    min-height: 44px;
+    flex: none;
+    align-items: center;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-pill);
+    color: var(--ink-700);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color var(--dur-1) var(--ease-out),
+      color var(--dur-1) var(--ease-out);
+  }
+  a:hover,
+  a[aria-current] {
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+  }
+  a:focus-visible {
+    outline-offset: -2px;
+  }
+  @media (max-width: 767px) {
+    .product-subnav {
+      top: var(--header-height, 64px);
+    }
+  }
+</style>

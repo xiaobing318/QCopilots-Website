@@ -2,92 +2,256 @@
 
 [简体中文](maintenance.zh.md) · [Back to README](../README.en.md)
 
-## Products and translations
+This guide is for the people who keep the website up to date. No front-end experience is needed. Here `site` means `.\scripts\site.cmd` on Windows and `bash scripts/site.sh` on Linux / macOS.
 
-`src/content/products.ts` is the source of truth for product content. Each product’s `locales.zh` and `locales.en` contain names, taglines, descriptions, benefits, steps, use cases, FAQs, and SEO copy. Shared navigation and home page text live in `src/content/ui.ts`.
+## Content model
 
-Each product’s `homeHeadline` contains the two home page headline segments, with the second segment accented. `homeDescription` is its shorter home page introduction, while the product detail page uses `tagline` and `description`. The home page’s `ui.home.closingParts` contains a prefix, accented brand name, and punctuation, and must agree with the complete `closingTitle`. Update both languages together and check line wrapping on narrow screens and longer English words.
+All text and product data live in `src/content/`. Page components only handle layout. Routine maintenance rarely touches anything else.
 
-When a product fact changes, update both languages and the [product evidence record](product-evidence.md). Keep corresponding entries aligned in meaning and order while writing naturally in each language. `name` is a display name, while `id` is the stable route identifier. A name change should not casually change the route.
+| File                           | Purpose                                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `src/content/types.ts`         | Field definitions for all content. Think of it as the schema                                                 |
+| `src/content/products.ts`      | Product registry. Imports each product file and sorts them by `order`, smallest first                        |
+| `src/content/products/<id>.ts` | Everything about one product: copy in both languages, theme colours, status, icon, demo, links and downloads |
+| `src/content/ui.ts`            | Shared copy: navigation, home page, product page labels, footer                                              |
+| `src/content/icons.ts`         | Icon names that content may use. Each maps to an icon in `src/components/Icon.astro`                         |
+| `src/content/demos.ts`         | Demo keys. Each maps to a component in `src/components/demos/registry.ts`                                    |
+| `docs/product-evidence.md`     | Product facts behind the website copy                                                                        |
 
-Chinese routes use `/zh/` and English routes use `/en/`, with independently generated HTML. An explicit English URL stays in English. Language preference applies to the root entry and deliberate switching. Language links use matching product identifiers and stable section IDs, so verify both when sections change.
+Main fields of a product file:
+
+| Field                       | Meaning                                                                                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | The URL slug, as in `/en/products/qcopilots-search/`. Lowercase letters, digits and hyphens only. Never change it after launch, or shared links break |
+| `order`                     | Display order, smallest first. Must be unique                                                                                                         |
+| `status`                    | `available` for released products, `coming-soon` for upcoming ones                                                                                    |
+| `icon`                      | Icon path (starting with `/images/`) and the image's natural width and height                                                                         |
+| `theme`                     | Product colours. See [Theme colours and contrast](#theme-colours-and-contrast)                                                                        |
+| `demo`                      | Optional demo key. Without it the generic demo is used                                                                                                |
+| `links`                     | Optional HTTPS links: `releases`, `source`, `license`                                                                                                 |
+| `locales.zh` / `locales.en` | All copy in each language                                                                                                                             |
+| `downloads`                 | Download entries, at least one                                                                                                                        |
+
+`locales` holds the name, category, tagline, summary, SEO text, home card, highlights, examples, optional `facts`, steps, privacy notes, requirements, FAQ, download text and the demo text. The comments in `types.ts` explain each field.
+
+## Editing copy safely
+
+If you are not sure where a piece of text lives, search for it in `src/content/`. Then follow these rules:
+
+1. **Edit both languages together.** The `zh` and `en` sides must have the same fields and list lengths. `site check` compares them entry by entry.
+2. **Leave nothing empty.** Empty strings and empty lists fail the check.
+3. **No Chinese in English copy.** The English side must not contain Chinese characters or full-width punctuation such as `，。：；（）、！？「」『』`.
+4. **Write Chinese the Chinese way.** Use full-width punctuation. Put a half-width space between Chinese and Latin words or numbers, as in “不到 1 GB 的模型”.
+5. **Write English the English way.** Keep the meaning, not the word order.
+6. **Keep placeholders.** In `ui.ts`, `'Explore {name}'` has `{name}` replaced by the product name. Keep it in both languages.
+7. **No unused keys in `ui.ts`.** When a page stops using a string, delete it from `ui.ts`. Otherwise `site check` reports `is not used`.
+8. **Only use icon names from `icons.ts`.** For a new icon, see [Adding an icon](#adding-an-icon).
+9. **Back product facts with evidence.** When a version, format or requirement changes, update the [product evidence record](product-evidence.md) too.
+10. **Check narrow screens.** Preview with `site dev`, shrink the browser window to phone width and check line breaks in both languages.
+
+The home headline is `home.title` in `ui.ts`, in two parts. After changing it or `home.eyebrow`, [regenerate the share images](#social-preview-images).
 
 ## Enabling or updating downloads
 
-Each product’s `downloads` array contains its platform, bilingual label, URL, and optional system requirements, version, architecture, and checksum.
+Each entry in `downloads` looks like this:
 
 ```ts
 {
   id: 'qcopilots-windows',
-  platform: 'windows',
+  platform: 'windows',          // windows | macos | linux | all
   label: { zh: 'Windows', en: 'Windows' },
-  url: null,
+  url: null,                    // null until the download exists
+  requirements: { zh: '…', en: '…' },  // optional
+  architecture: 'x64',          // optional
+  version: '1.0.0',             // optional
 }
 ```
 
-Replace `url: null` with a verified HTTPS release address to enable that entry. Fill in requirements, architecture, version, and checksum only when the corresponding release supports those facts. An empty URL renders a status, not an empty link or a `#` placeholder.
+When the QCopilots packages are ready:
 
-QCopilots packages are provided by the product maintainer, and the website is awaiting their links. Do not substitute upstream QGIS downloads or infer custom package compatibility from QGIS platform categories. QCopilots-Search currently links to its latest GitHub Releases page, avoiding hardcoded asset filenames that become stale.
+1. Change the product's `status` from `'coming-soon'` to `'available'`.
+2. Replace each platform's `url: null` with a verified HTTPS address.
+3. Fill in `requirements`, `architecture` and `version` only when the release notes support them.
+4. Update `downloads.description` in both languages and the [product evidence record](product-evidence.md).
+5. Run `site check`.
 
-## Adding a third product
+A `coming-soon` product cannot have download URLs. The check blocks it. A `null` URL shows a disabled “Download coming soon” state, never an empty link or `#`.
 
-1. Add a stable lowercase identifier to `ProductId`, such as `qcopilots-example`.
-2. Add a registry entry satisfying `Product`, with complete Chinese and English copy, downloads, image descriptions, and model or data handling information.
-3. Put the icon and illustrations in `public/images/`, reference them with `/images/` paths, and record their origin in [assets](assets.md).
-4. Update featured home page use cases in both languages when needed. Review whether navigation and home page layout still suit the product count.
-5. Run content checks, both path builds, and browser checks. Verify both localized product URLs, downloads, and SEO metadata.
+Do not substitute the upstream QGIS download page for QCopilots packages, and do not infer QCopilots compatibility from QGIS platforms. QCopilots Search links to its latest GitHub release page, `releases/latest`, so the site never breaks when file names change.
 
-The shared product page is generated from the registry, so do not copy an entire page. Extend the shared types and components when a genuinely different content structure is needed, rather than hardcoding it into one product or language.
+## Adding a product
 
-## Replacing visual assets
+Using `QCopilots-xxx` as the example:
 
-Preserve product icon proportions. Prefer WebP illustrations exported near their actual display size, with accurate alternative text. Do not place essential navigation, headings, or actions only inside images. The real interface remains HTML.
+1. **Copy a product file.** Copy `src/content/products/qcopilots-search.ts` to `src/content/products/qcopilots-xxx.ts`.
+2. **Set the basics.**
+   - `id: 'qcopilots-xxx'`. This is also part of the URL.
+   - `order`: a number nobody else uses, such as `30`. It sets the position in navigation and on the home page.
+   - `status`: `'available'` or `'coming-soon'`.
+3. **Add the icon.** Put the file in `public/images/`, for example `public/images/xxx-icon.svg`. Set `icon: { src: '/images/xxx-icon.svg', width: …, height: … }` with the image's natural size. Record its origin and license in [Assets](assets.md).
+4. **Choose theme colours.** Fill in the three `theme` colours. See [Theme colours and contrast](#theme-colours-and-contrast).
+5. **Write both languages.** Rewrite everything in `locales.zh` and `locales.en`. Highlight `icon` values must come from `icons.ts`.
+6. **Demo.** Without a dedicated demo, delete the `demo` line. The page then uses `GenericDemo` automatically, with text from `locales.*.demo`. For a dedicated demo, see [Product demos](#product-demos).
+7. **Downloads and links.** Fill in `downloads`, at least one entry. With `coming-soon`, every `url` is `null`. `links` is optional and must use HTTPS.
+8. **Register the product** in `src/content/products.ts`:
 
-Current product visuals are original illustrations, not running application screenshots, and retain the “Illustrative preview / 界面示意” label. When replacing one with a real screenshot, record its product version, origin, and publication permission, check for private content or credentials, then update the caption. Never describe an AI-generated window as an actual screenshot.
+   ```ts
+   import qcopilotsXxx from './products/qcopilots-xxx.ts';
 
-The selected reference is stored in `docs/design/selected-homepage.png`. It guides the visual direction, while the website also needs responsive layouts, keyboard support, and readable real content. QA records should describe material differences and why they exist, not just record that screenshots were created.
+   export const products: readonly Product[] = [qcopilots, qcopilotsSearch, qcopilotsXxx].toSorted(
+     (a, b) => a.order - b.order,
+   );
+   ```
 
-## Runtime and dependency updates
+9. **Update the family copy.** The home headline, `meta.description` in `src/content/ui.ts` and the OG images describe the whole family ("maps and files"). If the new product changes that story, update both languages and run `site run render:og`.
+10. **Run the checks** in the order given in [Checks before publishing](#checks-before-publishing).
 
-Keep Node and npm versions consistent across `.node-version`, `package.json`, setup tool locks, and GitHub Actions. Caddy version, platform archives, and checksums are pinned too. Verify official sources and each platform’s archive and checksum before running the three-platform CI.
+The new product then appears automatically in:
 
-Application dependencies use fixed versions and a committed `package-lock.json`. Use `npm ci` for routine installs and regenerate the lockfile only for dependency updates. Do not fix a build by modifying `node_modules/`. Check licensing and visual changes when updating fonts or icons.
+- Its pages in both languages, `/zh/products/qcopilots-xxx/` and `/en/products/qcopilots-xxx/`
+- The header, footer, home page product cards and examples
+- The “More from QCopilots” section at the bottom of product pages
+- The sitemap, `sitemap.xml`
+- The content checks, build checks and browser tests
 
-## Validation and publishing
+### Adding an icon
 
-Routine commands:
+1. Add the name to `iconNames` in `src/content/icons.ts`.
+2. In `src/components/Icon.astro`, import the matching Light SVG from `@phosphor-icons/core/assets/light/` and add it to the `icons` map.
+3. Run `site check`.
+
+## Product demos
+
+The “windows” on product pages and home cards are illustrations drawn with HTML, CSS and SVG, not screenshots. They carry an “Illustrative preview / 界面示意” label, and their text follows the page language.
+
+To add a dedicated demo:
+
+1. Add a key to `demoKeys` in `src/content/demos.ts`, for example `'xxx-window'`.
+2. Create a component in `src/components/demos/`, for example `XxxDemo.astro`. Copying `GenericDemo.astro` is a good start.
+3. Map the key to the component in `src/components/demos/registry.ts`.
+4. Set `demo: 'xxx-window'` in the product file.
+
+The demo contract (also written in a comment in `DemoFrame.astro`):
+
+- **Props are always `{ copy, variant }`.** `copy` is the product's `locales.*.demo`. `variant` is `'full'` (product page) or `'thumb'` (home card).
+- **Render one `.demo-window`, sized entirely in `em`.** Set `--demo-width` in em (default 60). The frame scales the font size so the window always fits, at any screen width.
+- **Scenes use `data-scene`.** The first scene is `data-scene="0"`. Every other scene gets `hidden`. Without JavaScript, only the first scene shows.
+- **Animate with two classes only.** `.d-in` fades in following `--d` (0, 1, 2…). `.d-type` reveals text from left to right like typing. When motion is off, both rest in their final state.
+- **No interactive elements.** No buttons, links or inputs. Draw them with `span` or `div`. The demo area is `inert` and `aria-hidden`, so screen readers read the caption instead.
+- **All text comes from content.** Hard-code no words in the component. Put button names and similar text in `copy.labels`, with the same keys in both languages.
+- **Colours come from variables.** Use the variables in `tokens.css` plus `--product-accent` and `--product-wash`. No colour values.
+- **No product names in class names.** The build check rejects selectors like `.search-…` or ones named after a product `id`. Use a short neutral prefix.
+
+Playback lives in `demo-motion.ts`. While a demo is on screen it moves to the next scene every 9 seconds. Visitors can pause it with the button next to the caption. With “reduce motion” turned on in the operating system, nothing plays and the pause button is hidden.
+
+## Theme colours and contrast
+
+Each product has three `theme` colours, all written as `#rrggbb`:
+
+| Field       | Used for                                  | Requirement                                                                               |
+| ----------- | ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `accent`    | Decoration: rules, icons, demo highlights | No text contrast requirement                                                              |
+| `accentInk` | Text: links, small headings               | At least 4.5:1 contrast on `#faf9f5` (the ivory background), `#ffffff` and its own `wash` |
+| `wash`      | Pale backgrounds: bands, demo stages      | Light enough for `accentInk` to pass                                                      |
+
+`site check` measures the contrast and names the background that fails. Usually a slightly darker `accentInk` fixes it.
+
+These colours reach the product page, home cards and demos as `--product-accent`, `--product-accent-ink` and `--product-wash`. Site-wide colours are defined only in `src/styles/tokens.css`. All other styles reference variables. The full design rules are in the [design reference](../design-qa.md).
+
+## Fonts
+
+| Font                   | Used for                    |
+| ---------------------- | --------------------------- |
+| Newsreader Variable    | English headings            |
+| Noto Serif SC Variable | Chinese headings            |
+| Noto Sans SC Variable  | Body text in both languages |
+
+The fonts come from the `@fontsource-variable/*` npm packages. They are imported in `src/layouts/SiteLayout.astro`, and the font stacks are `--font-display` and `--font-body` in `tokens.css`. The build copies the font files into `dist/`, so they are served from the site's own domain. Nothing goes through Google Fonts or another CDN, which matters for visitors in mainland China. The Chinese fonts are split into many small files by character range, and browsers download only the parts a page uses.
+
+When upgrading a font package, refresh the license copies in `public/licenses/` and `docs/licenses/` from the package's `LICENSE`, then check headings on Chinese and English pages.
+
+## Social preview images
+
+`public/images/og-zh.png` and `public/images/og-en.png` are the previews that social sites and chat apps show for shared links. They are 1200 × 630. `scripts/render-og.mjs` renders them with Playwright from `home.title` and `home.eyebrow` in `ui.ts`, the line art in `LineArt.astro` and the QCopilots icon.
+
+Regenerate them when you:
+
+- change the home headline `home.title` or `home.eyebrow`
+- change `src/components/LineArt.astro` or `public/images/qcopilots-icon.svg`
+- change the main colours or heading fonts
 
 ```bash
-bash scripts/site.sh check
-bash scripts/site.sh build
+site browsers chromium    # first time only
+site run render:og
 ```
 
-On Windows, use `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\site.ps1` instead of the Bash entry. Direct npm commands require a terminal using the pinned Node/npm versions, or the repository’s portable Node directory added to that terminal’s temporary PATH. Setup does not change the global environment.
+Commit both PNG files. `site run test:built` checks that they exist and have the right size.
 
-| Check                          | npm command or workflow                        |
-| ------------------------------ | ---------------------------------------------- |
-| Astro types and content fields | `npm run check`                                |
-| Code and formatting            | `npm run lint`, `npm run format:check`         |
-| Unit tests                     | `npm test`                                     |
-| Built links, assets, and SEO   | `npm run test:built`, after a production build |
-| Browsers and accessibility     | `npm run test:e2e`                             |
-| Native lifecycle               | `npm run test:native`                          |
-| Linux containers               | `npm run test:container`                       |
-| Dependency vulnerabilities     | `npm audit --audit-level=high`                 |
+## Checks before publishing
 
-Install browser dependencies separately with `npx playwright install`. Linux CI uses `npx playwright install --with-deps`. Ordinary content editing does not require installing every browser testing dependency on Windows 10.
+Before pushing to `main`, run in this order:
 
-`.github/workflows/ci.yml` runs quality, native lifecycle, and packaging checks on Windows, Linux, and macOS, with three browsers, root and project paths, and container deployment on Linux. `dependency-audit.yml` adds scheduled dependency checks. Review failure reports, screenshots, and logs instead of repeatedly changing the lockfile.
+1. `site check`: types and content
+2. `site run format:check`: formatting. If it fails, run `site run format`
+3. `site run lint`: code checks
+4. `site run test`: unit tests
+5. `site build`: build `dist/`
+6. `site run test:built`: check the build output
+7. `site browsers chromium`: first time only
+8. `site run test:e2e`: browser and accessibility tests
+9. If the home headline changed, run `site run render:og` and commit the new images
+10. Walk through the list in the [design reference](../design-qa.md#visual-qa-checklist) with `site dev`
 
-Pages publishes on every green push to `main` unless the repository variable `PAGES_ENABLED` is `false`. A manual main-branch run with publishing selected also works. The publishing job rebuilds and validates using the actual address and path returned by Pages. After deployment `npm run test:live` visits the live site like a user. Pull requests receive no publishing permissions.
+What each check catches:
 
-Record automation and real-device testing separately. A hosted runner does not prove Windows 10 / 11 clients, every Linux distribution, GPUs, or every Mac have passed. Service registration and reboot behavior need a target machine or dedicated VM. Website tests do not prove the desktop products’ runtime behavior.
+| Command               | What it checks                                                                                                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site check`          | Astro types. `scripts/check-content.mjs`: zh/en structure match, no Chinese in English copy, theme contrast, valid demo keys and icon names, no download URLs on `coming-soon` products, HTTPS links, no unused `ui.ts` keys      |
+| `site run test`       | Unit tests for the URL and path helpers                                                                                                                                                                                           |
+| `site run test:built` | `scripts/verify-build.mjs`: every link and file exists, bilingual SEO and sitemap, no Chinese on English pages outside `lang="zh-CN"` elements, download states, demo structure, share image size, no product-named CSS selectors |
+| `site run test:e2e`   | Playwright browser tests (`tests/e2e`): navigation, language switching, FAQ, keyboard focus, mobile layout, reduced motion, use without JavaScript, and axe accessibility checks                                                  |
+| `site run test:live`  | Visits every page of the live site. See [Development and deployment](deployment.en.md#checking-the-live-build)                                                                                                                    |
 
-## Content checks before publishing
+Browser tests use only Chromium by default. To include Firefox and WebKit, run `site browsers all`, then set the environment variable `E2E_BROWSERS=all`. To test the GitHub Pages project path, set `BASE_PATH=/QCopilots-Website/` before building and testing. On Linux, add `--with-deps` the first time, as in `site browsers all --with-deps`, to install the system packages browsers need.
 
-- Product capabilities, download states, and requirements agree across both languages, with sources for changed facts.
-- Both products are reachable from the home page, and language switching preserves the current product.
-- Production origin, deployment prefix, internal links, and assets agree.
-- Empty QCopilots downloads have no fake links, and the Search release link is reachable.
-- Mobile navigation, keyboard focus, FAQs, reduced motion, and image descriptions work.
-- Temporary native instances and containers are stopped. Production instances remain running only after an intentional deployment.
+Environment variables last for the current terminal window only. To set one:
+
+```text
+PowerShell   $env:E2E_BROWSERS = 'all'
+cmd          set E2E_BROWSERS=all
+Bash         export E2E_BROWSERS=all
+```
+
+After a push, CI repeats these checks on three operating systems, three browsers and two deployment paths, and also runs native deployment, a Linux container and a dependency security audit. When something fails, read the reports, screenshots and logs in Actions first. Do not keep changing the lockfile in the hope it passes.
+
+Automated tests are not real-device acceptance. Green CI does not prove every Windows 10 / 11 PC, Linux distribution or Mac works. Startup services and reboot behaviour need checking on the target machine.
+
+## Keeping Node and npm in sync
+
+The repository pins Node 24.22.1 and npm 11.19.1. To upgrade, change all of these together:
+
+| Location                                                             | What to change                                                                                                      |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `.node-version`                                                      | The Node version                                                                                                    |
+| `package.json`                                                       | `engines.node`, `engines.npm` and `packageManager`                                                                  |
+| `config/toolchain.json`                                              | `nodeVersion`, `npmVersion`, every platform's `node-*-url` and `node-*-sha256`, `nodeChecksumsSource`, `verifiedAt` |
+| `.github/workflows/ci.yml`, `.github/workflows/dependency-audit.yml` | Every `node-version:`                                                                                               |
+
+Keep in mind:
+
+- Copy checksums from Node's official `SHASUMS256.txt`. Update x64 and arm64 for Windows, Linux and macOS.
+- `npmVersion` must equal the npm bundled with the new Node, or the one-click scripts refuse to run.
+- Caddy is pinned in two places too: the `caddy*` fields in `config/toolchain.json` (native deployment) and the image in `Dockerfile` (containers). Keep them on the same version.
+- Afterwards, run `site setup` again on each computer to download the new Node into `.tools/`. After pushing, confirm CI passes on all three platforms.
+
+## Dependency updates
+
+- Dependencies use exact versions, and `package-lock.json` is committed. Routine installs use `npm ci` (which is what `site setup` does). Regenerate the lockfile only when upgrading.
+- Never fix a build by editing `node_modules/`.
+- Dependabot (`.github/dependabot.yml`) checks weekly:
+  - npm: development tools are grouped into one pull request.
+  - GitHub Actions: every action update is grouped into one pull request, because the Pages actions must move together.
+  - Docker: updates the Caddy image in `Dockerfile`.
+  - Major updates of TypeScript and `@types/node` are ignored. `astro check` and `typescript-eslint` do not support TypeScript 7 yet, and `@types/node` must match the pinned Node 24.
+- Merge Dependabot pull requests only after CI passes. When font or icon packages change, check their license texts and the pages as well.
+- `.github/workflows/dependency-audit.yml` runs `npm audit` weekly. You can also start it by hand in Actions.

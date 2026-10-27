@@ -6,7 +6,8 @@
     "playwright.config.ts",
     "playwright.live.config.ts",
     "tests/e2e/**/*",
-    "tests/live/**/*"
+    "tests/live/**/*",
+    "tests/shared/**/*"
   ],
   "exclude": ["dist"]
 }

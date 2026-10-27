@@ -1,79 +1,71 @@
 # 产品事实记录 / Product evidence
 
-本记录用于维护官网文案，核查日期为 **2026-10-23**。它记录代码与发布资料所支持的能力，不代表本次运行了产品或验证了全部设备。官网不依赖这些仓库进行构建。
+本记录用于维护官网文案，最近一次核查日期为 **2026-10-26**。它记录源码与发布资料所支持的能力，不代表本次运行了产品或验证了全部设备。官网构建不读取这些仓库。
 
-This record supports website content maintenance, reviewed on **2026-10-23**. Source evidence is not a claim that the products or every supported device were executed during website development. Website builds do not read these repositories.
+This record supports website copy maintenance and was last reviewed on **2026-10-26**. Source evidence is not a claim that the products or every supported device were executed. Website builds never read these repositories.
 
 ## 版本锚点 / Revision anchors
 
-| 产品             | 来源                                                                            | 审查版本                                             |
-| ---------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| QCopilots        | QGIS fork，`feature/final-4_2_0-qcopilots`                                      | `1400035ddd394f5e4c8daf43609be8bc1f28becd`           |
-| QCopilots-Search | [xiaobing318/QCopilots-Search](https://github.com/xiaobing318/QCopilots-Search) | `625ec5d3f446484c51c29e50e952a006c75356f3`           |
-| Search 公开发布  | [v0.3.0](https://github.com/xiaobing318/QCopilots-Search/releases/tag/v0.3.0)   | 2026-10-17 发布，后续网站下载使用 `/releases/latest` |
+| 产品             | 来源                                                                            | 审查版本                                                 |
+| ---------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| QCopilots        | QGIS fork，`feature/final-4_2_0-qcopilots`                                      | `1400035ddd394f5e4c8daf43609be8bc1f28becd`               |
+| QCopilots Search | [xiaobing318/QCopilots-Search](https://github.com/xiaobing318/QCopilots-Search) | `625ec5d3f446484c51c29e50e952a006c75356f3`，v0.3.0       |
+| Search 公开发布  | [v0.3.0](https://github.com/xiaobing318/QCopilots-Search/releases/tag/v0.3.0)   | 网站下载使用 `/releases/latest`，2026-10-26 已确认可访问 |
 
-以上来源不包含参考仓库的 `AGENTS.md` 或 `.codex` 文件。版本号不会作为官网“当前最新版”硬编码，下载入口由产品发布页提供最新信息。
+核查不读取参考仓库中的 `AGENTS.md` 和 `.codex` 文件。官网写作 “QCopilots Search”（含空格），与应用窗口标题一致。仓库名和网址仍为 `qcopilots-search`。
 
 ## QCopilots
 
-所有下列路径相对于 QGIS 源码仓库。QCopilotsCommon 是多个 Python 插件的共享实现，本轮已纳入能力核查。
+路径相对于 QGIS 源码仓库。
 
-| 官网内容 / Website claim   | 实现证据 / Source evidence                                                                                                                                                                                | 边界 / Boundary                                                            |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 在 QGIS 中通过对话推进工作 | `src/plugins/qcopilots/qcopilots_container_dock.cpp`、`qcopilots_mcp_bridge.cpp`                                                                                                                          | 容器连接配置的 Web UI 和工具，不保证任意模型供应商兼容                     |
-| 查看图层、属性和空间范围   | `python/plugins/qcopilots_common/interactive_layer_tools.py` 的 `list_map_layers`、`get_layer_metadata`、`query_vector_features`，具体实现于 `bridge.py`                                                  | 查询有分页与范围边界，不宣传无限读取                                       |
-| 矢量、栅格、通用处理       | `python/plugins/qcopilots_mcp_server_processing_vector/server.py`、`qcopilots_mcp_server_processing_raster/server.py`、`qcopilots_mcp_server_processing_general/server.py` 调用共享 `processing_tools.py` | `processing_metadata.py` 定义算法支持范围，不声称所有 QGIS 算法均可调用    |
-| 应用样式与调整地图视图     | `interactive_layer_tools.py` 的 `apply_layer_style`，`processing_tools.py` 的 `zoom_to_layer`、`zoom_to_extent`                                                                                           | 样式工具应用已有本地 QML / SLD 文件，不是通用任意样式编辑器                |
-| 创建并导出地图布局         | `interactive_layer_tools.py` 的 `create_print_layout`、`list_print_layouts`、`export_print_layout`，`bridge.py` 对应实现                                                                                  | 当前为带标题、地图及可选图例和比例尺的受限单页布局，不宣传任意已有布局编辑 |
-| 地图图像导出               | `processing_tools.py` 的 `export_map_image`                                                                                                                                                               | 输出需结合数据、坐标系和分析条件检查                                       |
-| 本地或在线模型的数据边界   | `qcopilots_container_utils.cpp` 与 `qcopilots_container_dock.cpp` 支持配置 HTTP / HTTPS 地址，MCP bridge 提供工具响应                                                                                     | 数据流向取决于前端、所接模型服务及操作，不能宣称“永不上云”                 |
+| 官网内容 / Website claim                       | 证据 / Source evidence                                                                                                                              | 边界 / Boundary                                                                      |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 内置于 QGIS 的对话面板，默认停靠在右侧         | `src/plugins/qcopilots/qcopilots_container_plugin.cpp:153`、`qcopilots_container_dock.cpp`                                                          | 面板嵌入已配置的 Web UI                                                              |
+| 默认连接本机 llama.cpp Web UI `127.0.0.1:8282` | `src/plugins/qcopilots/qcopilots_container_utils.cpp:110`、`web/qcopilots_mcp_bootstrap.js:50`、`qcopilots_container_dock.cpp:696,699`              | 地址可改为其他服务，此时对话会发送到该服务。插件本身不启动 llama-server              |
+| 82 项工具，分布在 7 个工具服务                 | `tests/src/python/test_qcopilots_mcp_tool_inventory.py`（`EXPECTED_COUNTS` 9+5+33+6+6+17+6）                                                        | 数字随开发版本变化，官网注明来自当前开发版本                                         |
+| 750+ 个处理算法                                | `python/plugins/qcopilots_mcp_server_skills/Skills/qgis-skills-creator/references/qgis-tools.catalog.json:21,25`（实时会话 772，命令行快照 761）    | 可用算法取决于用户的 QGIS 安装                                                       |
+| 87 个命令行程序                                | `python/plugins/qcopilots_mcp_server_qgis_binary/qgis_binaries.json`（591 个中启用 87 个）                                                          | 包含 GDAL、PROJ、PDAL、HDF5、LASzip、qgis_process 等，不只 GDAL / PROJ / PDAL        |
+| 工具服务只在本机监听，需要私有访问密钥         | `qcopilots_common/constants.py:20`、`mcp_http.py:917-922,1940`、`qcopilots_manager_config.json`、`qcopilots_mcp_servers_manager/plugin.py:914,1783` | 各服务共用一个访问令牌，官网不写“各自独立的密钥”                                     |
+| 编辑先暂存，由用户保存                         | `qcopilots_common/bridge.py:3007-3047`（`requires_user_commit`）                                                                                    | 移除图层时若用户确认“保存”，会提交编辑                                               |
+| 移除图层、替换输出要先预览，再单独确认         | `interactive_layer_tools.py:67-108,542`、`processing_tools.py:270-278`、`qgis_binary_tools.py:94,297`                                               | 确认是 AI 携带一次性令牌发起的第二次调用，不是给用户的弹窗。官网不写“先征得你的同意” |
+| 处理任务在后台运行，结果默认加入项目           | `processing_jobs.py:1297`（`QgsProcessingAlgRunnerTask`）、`processing_tools.py:272`                                                                |                                                                                      |
+| 打印布局与导出 PDF / PNG / JPEG / SVG          | `interactive_layer_tools.py` 的 `create_print_layout`、`export_print_layout`                                                                        | 受限的单页布局，含标题、地图、图例和比例尺                                           |
+| 应用已保存的样式、添加标注                     | `interactive_layer_tools.py` 的 `apply_layer_style`、标注工具                                                                                       | 只应用已有 QML / SLD 文件，不是任意样式编辑器                                        |
+| Windows 10 / 11 x64                            | `python/plugins/qcopilots_mcp_servers_manager/README.md:16`、命令行目录的 `profile_id`（OSGeo4W 布局）                                              | 尚未提供下载地址，官网条目为 `url: null`                                             |
 
-用户已明确说明存在 QCopilots 安装包，但尚未提供网站下载 URL。因此三个主要平台条目使用 `null`，不虚构安装文件、最低系统版本、架构、体积、校验和或发行通道。平台分类参考 [QGIS 官方下载页](https://qgis.org/download/)，不以其作为定制包兼容保证。
+其他边界：内置文件工具可以写入、编辑文件并运行命令（`qcopilots_mcp_server_builtin_tools`），官网 FAQ 因此建议在有备份的数据上使用。QCopilots 面板就是 llama.cpp Web UI，插件界面文字为英文，官网不声称它有中文界面。用户需要自己启动 llama-server。添加的图层默认位于最上层，没有调整图层顺序的工具（`bridge.py:1297`），官网不写“在图层下方”。打印布局使用数字比例尺（`bridge.py:1773`）。
 
-The maintainer confirmed QCopilots packages exist but has not yet supplied website URLs. Platform entries therefore remain `null`. Upstream QGIS platform categories are not a compatibility guarantee for these custom packages.
+## QCopilots Search
 
-## QCopilots-Search
+路径相对于 Search 源码仓库。
 
-所有下列路径相对于 Search 源码仓库。功能对应 v0.3.0，审查 HEAD 与该发布之间的改动为 README 内容。
+| 官网内容 / Website claim                                                    | 证据 / Source evidence                                                                                              | 边界 / Boundary                                                                                                                             |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 版本 0.3.0，MIT 许可                                                        | `CMakeLists.txt:2`、`LICENSE`                                                                                       | 下载入口使用 latest 发布页                                                                                                                  |
+| 8 种文档格式，19 种相机 RAW 与 HEIC，约 90 种代码文件和 Jupyter 笔记本      | `src/core/file_formats.h`                                                                                           | 不支持 XLSX、PPTX                                                                                                                           |
+| 文字识别：英文、简体中文、繁体中文                                          | `src/core/pipeline_manifest.h:37`                                                                                   |                                                                                                                                             |
+| 音频按 30 秒窗口匹配声音，不转写文字                                        | `src/core/pipeline_manifest.h:52,58,59`、`docs/dependencies.md`                                                     | 窗口每 25 秒滑动，视频每 3 秒取帧                                                                                                           |
+| 中英文示例查询                                                              | `tests/semantic/semantic_acceptance.cpp:212-236`                                                                    | 测试证明能找到正确文件与位置，不证明排名第一                                                                                                |
+| 预览直达命中的段落、页面或时刻                                              | `src/app/preview_panel.cpp`、`src/app/main_window.cpp`                                                              | 系统默认程序只打开文件。SumatraPDF、Skim、Okular、mpv 可按页面或时间打开（`platform_external_open.cpp:134-138`、`settings_dialog.cpp:101`） |
+| 快速搜索 Ctrl+Shift+Space                                                   | `src/app/platform_integration.cpp`（Windows `RegisterHotKey`，macOS `controlKey`）、`linux_global_shortcut.cpp:251` | macOS 上同样是 Control 键                                                                                                                   |
+| 模型一次性下载，不到 1 GB，可离线导入                                       | `config/qcs-models.lock.json`（约 825 MiB）                                                                         | 模型不包含在安装包内                                                                                                                        |
+| 无模型时可用关键词搜索。移出索引不删除文件                                  | `README.md`                                                                                                         |                                                                                                                                             |
+| 版本更新检查可以关闭                                                        | `src/app/settings_dialog.cpp:305`、`src/app/app_settings.h:27`                                                      | 默认开启                                                                                                                                    |
+| 平台：Windows 10 1809+ x64，macOS 14.4+ Apple 芯片，Linux x64 Ubuntu 22.04+ | `docs/dependencies.md:34-44`、`CMakeLists.txt:35`、`config/build-variants.json`                                     | NVIDIA / AMD 构建需要 Ubuntu 24.04。AMD 只支持较新的显卡。所有构建都能用 CPU 运行                                                           |
+| macOS 版本未经公证                                                          | `docs/releasing.md:41`                                                                                              | FAQ 给出“仍要打开”的步骤                                                                                                                    |
 
-| 官网内容 / Website claim        | 实现证据 / Source evidence                                                     | 边界 / Boundary                                            |
-| ------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| 关键词与语义检索                | `README.md`、`docs/architecture.md`                                            | 本地内容检索，不是互联网搜索、生成式问答或会议纪要工具     |
-| 文档、PDF、图片、音频、视频     | `docs/dependencies.md` 的格式表                                                | 格式、文件大小、解码器及分片数量有各自限制，不声称任意格式 |
-| 选择目录与排除范围              | `src/app/settings_dialog.cpp`、`docs/configuration.md`                         | 用户先选择搜索根目录并建立索引                             |
-| 匹配位置预览与筛选              | `src/app/preview_panel.cpp`、`src/app/main_window.cpp`、`docs/architecture.md` | 应用内定位与外部查看器行为不同，不保证所有外部软件准确跳转 |
-| 本机提取、索引、语义推理        | `README.md`、`docs/architecture.md`                                            | 模型下载与版本检查联网，不声称应用绝不联网                 |
-| 无语义模型可关键词搜索          | `README.md`、`docs/configuration.md`                                           | 限于文件名和已提取正文，语义能力需要模型                   |
-| EmbeddingGemma 2 下载或离线导入 | `config/qcs-models.lock.json`、`docs/dependencies.md`                          | 模型权重不在安装包内，不支持任意同名模型替换               |
-| 可关闭自动检查更新              | `src/app/settings_dialog.cpp` 的 `checkUpdates`                                | 默认自动检查不等于完全离线运行                             |
+## 文案边界 / Editorial boundaries
 
-### 平台发布基线 / Release baselines
+- 不承诺 AI 结果总是正确，用“检查结果”“由你决定”这类表述。
+- 不使用虚构的用户数量、评价、速度数字、认证或服务等级。Search 不发布速度数据。
+- 界面图是用代码绘制的示意，标注“界面示意 / Illustrative preview”，不当作真实截图。
+- 不把桌面产品的平台与网站的开发、构建、托管平台混为一谈。
+- 产品能力变化时，先更新本记录的版本锚点和证据，再同步修改中英文文案。
 
-来源是 `docs/dependencies.md` 与 `config/build-variants.json`。
+## 设计参考 / Design references
 
-| 平台        | 发行基线                                                                 |
-| ----------- | ------------------------------------------------------------------------ |
-| Windows x64 | Windows 10 1809 与 Windows 11，GPU 变体另有驱动及硬件要求                |
-| Linux x64   | CPU / Vulkan 以 Ubuntu 22.04 为基线，部分 GPU 变体以 Ubuntu 24.04 为基线 |
-| macOS arm64 | Apple Silicon，macOS 14.4 或更高版本                                     |
+- [Anthropic 产品介绍](https://claude.com/product/overview)：暖色编辑风格、衬线标题、克制的动效。
+- [OpenAI 产品介绍](https://chatgpt.com/overview/)：用代码实现的产品界面演示。
+- [Astro 文档](https://docs.astro.build/) 与 [GitHub Pages 发布配置](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
 
-这些是发行配置和依赖基线，不能据此声称所有设备已经真机验证。macOS 入口不暗示 Intel Mac 支持。首页不展开所有 GPU 变体，用户前往真实发布页选择合适的安装文件。
-
-These are release and dependency baselines, not proof of testing every machine. The macOS entry does not imply Intel Mac support. The release page remains the source of package-specific hardware and driver information.
-
-## 文案校准 / Editorial boundaries
-
-- 使用“查看、检查、继续探索”，不承诺 AI 结果始终正确。
-- 不使用虚构的用户数量、客户评价、速度数字、认证或服务等级。
-- 不把产品示意图当作实际运行截图。
-- 不把桌面产品平台与网站开发、构建、托管平台混为一谈。
-- 新增产品能力时更新本记录的提交锚点和证据，再更新中英文文案。
-
-## 设计与技术参考 / Design and technical references
-
-- [OpenAI 产品介绍](https://chatgpt.com/overview/)：清晰的价值表达、留白和产品展示节奏。
-- [Anthropic 产品介绍](https://claude.com/product/overview)：任务叙事与编辑式排版。
-- [Astro 文档](https://docs.astro.build/)：静态生成、路由与部署。
-- [GitHub Pages 发布配置](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)：Actions 发布来源与设置。
-
-网站采用独立品牌、原创文字和原创展示图，没有复制参考页面的文案或页面源码。
+网站使用独立品牌、原创文字与原创界面示意，没有复制参考页面的文案、素材或源码。

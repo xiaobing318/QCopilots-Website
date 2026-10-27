@@ -12,7 +12,7 @@ updates:
       # Node.js stays on the pinned 24 line, so its type definitions must match it.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
-      # astro check and typescript-eslint do not support the TypeScript 7 native compiler yet.
+      # astro check and typescript-eslint pin TypeScript 5 peers, so TypeScript major updates wait for them.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions

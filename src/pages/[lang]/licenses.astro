@@ -1,0 +1,77 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import type { Locale } from '../../content/types.ts';
+import { products } from '../../content/products.ts';
+import { ui } from '../../content/ui.ts';
+import { locales } from '../../lib/i18n.ts';
+import { asset } from '../../lib/site.mjs';
+
+export function getStaticPaths() {
+  return locales.map((locale) => ({ params: { lang: locale }, props: { locale } }));
+}
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].footer;
+const notices = [
+  ['Newsreader', 'SIL Open Font License 1.1', '/licenses/newsreader-OFL.txt'],
+  ['Noto Serif SC', 'SIL Open Font License 1.1', '/licenses/noto-serif-sc-OFL.txt'],
+  ['Noto Sans SC', 'SIL Open Font License 1.1', '/licenses/noto-sans-sc-OFL.txt'],
+  ['Phosphor Icons', 'MIT', '/licenses/phosphor-MIT.txt'],
+  ...products.flatMap((product) =>
+    product.icon.license
+      ? [[`${product.locales.en.name} icon`, product.icon.license.name, product.icon.license.file]]
+      : [],
+  ),
+] as const;
+---
+
+<SiteLayout
+  locale={locale}
+  title={`${t.licenses} · QCopilots`}
+  description={t.licenses}
+  slug="licenses"
+  noindex
+>
+  <section class="section container-narrow">
+    <h1>{t.licenses}</h1>
+    <ul>
+      {notices.map(([name, license, file]) => (
+        <li lang="en">
+          <span>{name}</span>
+          <a href={asset(file)}>{license}</a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</SiteLayout>
+
+<style>
+  h1 {
+    margin-bottom: var(--space-7);
+    font-size: var(--text-2xl);
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--oat-300);
+    list-style: none;
+  }
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+    padding-block: var(--space-4);
+    border-bottom: 1px solid var(--oat-300);
+  }
+  span {
+    color: var(--ink-900);
+    font-weight: 600;
+  }
+  a {
+    color: var(--accent-ink);
+  }
+</style>

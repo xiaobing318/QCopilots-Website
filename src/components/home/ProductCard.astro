@@ -1,0 +1,172 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import { format, themeStyle } from '../../lib/i18n.ts';
+import { asset, route } from '../../lib/site.mjs';
+import Demo from '../demos/Demo.astro';
+import Icon from '../Icon.astro';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { product, locale } = Astro.props;
+const content = product.locales[locale];
+const t = ui[locale].product;
+const page = route(locale, `products/${product.id}`);
+const headingId = `card-${product.id}`;
+---
+
+<article class="product-card" style={themeStyle(product.theme)} aria-labelledby={headingId}>
+  <div class="card-media">
+    <Demo product={product} locale={locale} variant="thumb" />
+  </div>
+  <div class="card-body">
+    <div class="card-identity">
+      <img
+        src={asset(product.icon.src)}
+        width={product.icon.width}
+        height={product.icon.height}
+        alt=""
+      />
+      <div>
+        <h3 id={headingId}>{content.name}</h3>
+        <p>{content.category}</p>
+      </div>
+      <span class:list={['status', `status-${product.status}`]}>
+        {product.status === 'available' ? t.available : t.comingSoon}
+      </span>
+    </div>
+    <p class="card-headline">{content.card.headline}</p>
+    <p class="card-description">{content.card.description}</p>
+    <ul class="card-highlights">
+      {content.highlights.slice(0, 3).map((highlight) => (
+        <li>
+          <Icon name={highlight.icon} />
+          {highlight.title}
+        </li>
+      ))}
+    </ul>
+    <div class="card-footer">
+      <p class="card-platforms">{content.card.platforms}</p>
+      <a class="button" href={page}>
+        {format(t.explore, { name: content.name })}
+        <Icon name="arrow" class="icon-arrow" />
+      </a>
+    </div>
+  </div>
+</article>
+
+<style>
+  .product-card {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--paper);
+    box-shadow: var(--shadow-1);
+  }
+  .card-media {
+    position: relative;
+    padding: var(--space-6) var(--space-6) 0;
+    background:
+      radial-gradient(100% 80% at 15% 0%, var(--paper) 0%, transparent 60%),
+      linear-gradient(160deg, var(--product-wash) 0%, var(--ivory-100) 100%);
+  }
+  .card-media::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--product-accent);
+    content: '';
+  }
+  .card-media :global(.demo-thumb) {
+    max-height: 15rem;
+    overflow: hidden;
+    border-radius: var(--radius-m) var(--radius-m) 0 0;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  }
+  .card-media :global(.demo-window) {
+    border-bottom: 0;
+    border-radius: 0.75em 0.75em 0 0;
+    box-shadow: none;
+  }
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-6);
+  }
+  .card-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .card-identity img {
+    width: 44px;
+    height: 44px;
+  }
+  .card-identity h3 {
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    font-weight: 600;
+  }
+  .card-identity p {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+  .status {
+    margin-left: auto;
+    padding: 0.2em 0.75em;
+    border-radius: var(--radius-pill);
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .card-headline {
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: var(--heading-weight);
+    line-height: var(--leading-heading);
+    text-wrap: balance;
+  }
+  .card-description {
+    color: var(--text);
+  }
+  .card-highlights {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .card-highlights li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--ink-700);
+    font-size: var(--text-sm);
+  }
+  .card-highlights :global(.icon) {
+    color: var(--product-accent-ink);
+  }
+  .card-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+  }
+  .card-platforms {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+</style>

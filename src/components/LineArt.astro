@@ -1,0 +1,97 @@
+---
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+---
+
+<!-- Decorative hero motif: map contours, a route, a document and a sound wave drawn as thin lines. -->
+<svg
+  class:list={['line-art', className]}
+  viewBox="0 0 480 440"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.25"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  <g class="contours">
+    <path d="M90 250C80 160 190 90 290 110S430 220 380 300 200 390 140 340C110 315 95 290 90 250Z"></path>
+    <path d="M130 250C125 180 205 135 285 150S385 230 350 290 215 350 170 315C145 295 132 275 130 250Z"></path>
+    <path d="M170 248C168 200 222 175 280 185S345 240 322 278 230 318 200 295C182 281 172 265 170 248Z"></path>
+    <path d="M212 246C212 222 240 210 270 216S304 244 292 262 242 282 226 270C216 262 212 255 212 246Z"></path>
+  </g>
+  <path class="route" d="M40 392C110 352 150 306 196 282S238 258 252 247"></path>
+  <g class="pin">
+    <circle cx="252" cy="246" r="14"></circle>
+    <circle class="pin-dot" cx="252" cy="246" r="4.5"></circle>
+  </g>
+  <g class="document">
+    <rect x="330" y="34" width="100" height="126" rx="10"></rect>
+    <path d="M350 64h60M350 82h60M350 100h42M350 118h52"></path>
+    <circle cx="408" cy="148" r="16"></circle>
+    <path d="M420 160l14 14"></path>
+  </g>
+  <path
+    class="wave"
+    d="M300 410v-8M312 414v-16M324 418v-24M336 412v-12M348 420v-28M360 414v-16M372 410v-8M384 416v-20M396 412v-12M408 410v-8"
+  ></path>
+</svg>
+
+<style>
+  .line-art {
+    width: 100%;
+    height: auto;
+    color: var(--clay-500);
+  }
+  .contours path {
+    color: var(--ink-500);
+    stroke-opacity: 0.32;
+  }
+  .contours path:nth-child(2) {
+    stroke-opacity: 0.42;
+  }
+  .contours path:nth-child(3) {
+    stroke-opacity: 0.55;
+  }
+  .route {
+    stroke-dasharray: 2 7;
+  }
+  .pin circle:first-child {
+    stroke-opacity: 0.45;
+  }
+  .pin-dot {
+    fill: currentColor;
+  }
+  .document rect,
+  .document path:first-of-type {
+    color: var(--ink-500);
+    stroke-opacity: 0.6;
+  }
+  .wave {
+    stroke-width: 2;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.motion-ok) .route {
+      animation: route-flow 5s linear 1;
+    }
+    :global(.motion-ok) .pin circle:first-child {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pin-breathe 2.4s var(--ease-out) 2;
+    }
+  }
+  @keyframes route-flow {
+    to {
+      stroke-dashoffset: -54;
+    }
+  }
+  @keyframes pin-breathe {
+    50% {
+      transform: scale(1.25);
+      stroke-opacity: 0.15;
+    }
+  }
+</style>

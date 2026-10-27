@@ -1,0 +1,925 @@
+---
+/*
+ * A quiet recreation of the QCopilots Search main window (src/app/main_window.cpp and
+ * src/app/preview_panel.cpp in QCopilots-Search): header, rounded search field, filter row,
+ * results list beside a preview of the selected (first) result, index status and shortcut hint.
+ *
+ * Copy fields used per scene:
+ * - results[0] is the selected row. Its kind picks the preview: a PDF page, a photo,
+ *   an audio player or a video frame. Audio is matched by sound, so it never shows a transcript.
+ * - steps[0] is the preview toolbar text: the PDF page box, the image zoom or the player time
+ *   ("0:50 / 3:12", which also places the playhead). steps[1..] is the text on the PDF page.
+ */
+import type { DemoCopy, DemoResult } from '../../content/types.ts';
+import type { IconName } from '../../content/icons.ts';
+import Icon from '../Icon.astro';
+interface Props {
+  copy: DemoCopy;
+  variant: 'full' | 'thumb';
+}
+const { copy, variant } = Astro.props;
+const { labels } = copy;
+const uid = `qcs-${variant}`;
+
+const glyphs: Record<DemoResult['kind'], IconName> = {
+  text: 'document',
+  pdf: 'document',
+  image: 'image',
+  audio: 'waveform',
+  video: 'film',
+  code: 'code',
+  layer: 'layers',
+};
+
+/** "0:50 / 3:12" gives the playhead position and the clip length in seconds. */
+function timeline(label = '') {
+  const seconds = (value = '') => {
+    const match = value.trim().match(/^(\d+):(\d{2})$/);
+    return match ? Number(match[1]) * 60 + Number(match[2]) : Number.NaN;
+  };
+  const [at, total] = label.split('/').map(seconds);
+  return at >= 0 && total > 0 ? { at: Math.min(1, at / total), total } : { at: 0.3, total: 180 };
+}
+
+const rain = Array.from({ length: 46 }, (_, index) => ({
+  x: (index * 83) % 410,
+  y: (index * 47) % 190,
+  length: 10 + (index % 4) * 3,
+}));
+const stars = Array.from({ length: 26 }, (_, index) => [
+  -96 + ((index * 151) % 592),
+  8 + ((index * 67) % 224),
+]).filter(([x, y]) => Math.hypot(x - 200, y - 120) > 100);
+---
+
+<div
+  class:list={['demo-window', 'qcs', { 'qcs-thumb': variant === 'thumb' }]}
+  style="--demo-width: 62"
+>
+  <div class="demo-titlebar">
+    <span class="demo-title">{copy.windowTitle}</span>
+    <span class="demo-controls">
+      <i></i>
+      <i></i>
+      <i></i>
+    </span>
+  </div>
+  <div class="qcs-body">
+    <div class="qcs-head">
+      <div class="qcs-brand">
+        <span class="qcs-heading">{copy.windowTitle}</span>
+        <span class="qcs-subtitle">{labels.subtitle}</span>
+      </div>
+      <span class="qcs-buttons">
+        <span class="qcs-button">{labels.quick}</span>
+        <span class="qcs-button">
+          <i class="qcs-ready-dot"></i>
+          {labels.model}
+        </span>
+        <span class="qcs-button">{labels.settings}</span>
+      </span>
+    </div>
+
+    {copy.scenes.map((scene, index) => {
+      const results = scene.results ?? [];
+      const selected = results[0];
+      const [toolbar = '', ...pageLines] = scene.steps ?? [];
+      const [pageTitle, ...passage] = pageLines;
+      const media = timeline(toolbar);
+      return (
+        <div class="qcs-scene" data-scene={index} hidden={index > 0}>
+          <div class="qcs-search">
+            <Icon name="search" />
+            <span class="qcs-query d-type">{scene.query}</span>
+            <i class="qcs-clear" />
+          </div>
+          <div class="qcs-filters">
+            <span class="qcs-combo qcs-kind">
+              {labels.all}
+              <i class="qcs-chevron" />
+            </span>
+            <span class="qcs-combo qcs-root">
+              {labels.folders}
+              <i class="qcs-chevron" />
+            </span>
+            <span class="qcs-check">
+              <i class="qcs-box" />
+              {labels.code}
+            </span>
+            <span class="qcs-summary d-in" style="--d:2">
+              {labels.results?.replace('{count}', String(results.length))}
+            </span>
+          </div>
+          <div class="qcs-split">
+            <ul class="qcs-results">
+              {results.map((result, position) => (
+                <li
+                  class:list={['qcs-row', 'd-in', { 'is-selected': position === 0 }]}
+                  style={`--d:${position + 2}`}
+                >
+                  <span class={`qcs-glyph qcs-glyph-${result.kind}`}>
+                    <Icon name={glyphs[result.kind]} />
+                  </span>
+                  <span class="qcs-row-title">{result.title}</span>
+                  {result.match && (
+                    <span class={`qcs-badge qcs-badge-${result.match}`}>
+                      {labels[result.match]}
+                    </span>
+                  )}
+                  <span class="qcs-row-meta">{result.meta}</span>
+                </li>
+              ))}
+            </ul>
+            {selected && (
+              <div
+                class:list={['qcs-preview', 'd-in', `qcs-preview-${selected.kind}`]}
+                style="--d:3"
+              >
+                <div class="qcs-preview-head">
+                  <span class="qcs-preview-title">{selected.title}</span>
+                  <span class="qcs-preview-location">{selected.meta}</span>
+                </div>
+
+                {(selected.kind === 'pdf' ||
+                  selected.kind === 'text' ||
+                  selected.kind === 'code') && (
+                  <div class="qcs-pdf">
+                    {toolbar && (
+                      <span class="qcs-spin">
+                        {toolbar}
+                        <i class="qcs-spin-arrows" />
+                      </span>
+                    )}
+                    <div class="qcs-canvas qcs-canvas-paper">
+                      <div class="qcs-page">
+                        <div class="qcs-page-mast">
+                          <i />
+                          <i />
+                        </div>
+                        {pageTitle && <p class="qcs-page-title">{pageTitle}</p>}
+                        {passage.map((line) => (
+                          <p class="qcs-page-line">{line}</p>
+                        ))}
+                        <div class="qcs-page-rest">
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selected.kind === 'image' && (
+                  <div class="qcs-image">
+                    {toolbar && <span class="qcs-chip">{toolbar}</span>}
+                    <div class="qcs-canvas qcs-canvas-space">
+                      <svg viewBox="-100 0 600 240" aria-hidden="true">
+                        <defs>
+                          <radialGradient id={`${uid}-ocean`} cx="36%" cy="32%" r="78%">
+                            <stop offset="0" stop-color="#6aa6e6" />
+                            <stop offset="0.5" stop-color="#2d66b5" />
+                            <stop offset="1" stop-color="#0e2a5c" />
+                          </radialGradient>
+                          <linearGradient id={`${uid}-night`} x1="0" x2="1" y1="0" y2="0.3">
+                            <stop offset="0.5" stop-color="#040a16" stop-opacity="0" />
+                            <stop offset="1" stop-color="#040a16" stop-opacity="0.72" />
+                          </linearGradient>
+                          <clipPath id={`${uid}-globe`}>
+                            <circle cx="200" cy="120" r="84" />
+                          </clipPath>
+                        </defs>
+                        {stars.map(([x, y], star) => (
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r={star % 3 === 0 ? 1.3 : 0.8}
+                            fill="#ffffff"
+                            opacity={star % 2 ? 0.55 : 0.85}
+                          />
+                        ))}
+                        <circle cx="200" cy="120" r="94" fill="#7fb4ff" opacity="0.08" />
+                        <circle cx="200" cy="120" r="88" fill="#9cc6ff" opacity="0.16" />
+                        <circle cx="200" cy="120" r="84" fill={`url(#${uid}-ocean)`} />
+                        <g clip-path={`url(#${uid}-globe)`}>
+                          <path
+                            d="M186 72c13-7 30-3 36 9 6 12 15 18 11 32-4 14-12 22-18 38-4 12-12 20-18 16-6-6-4-20-10-30-6-10-16-16-14-30 2-12 4-29 13-35z"
+                            fill="#7f9d6c"
+                          />
+                          <path
+                            d="M196 120c6 2 10 10 8 18-4 4-10 0-10-8z"
+                            fill="#c8b07e"
+                            opacity="0.8"
+                          />
+                          <path
+                            d="M214 52c16-6 38-2 52 8 10 8 4 18-8 20-12 2-22-4-32-8-8-4-20-12-12-20z"
+                            fill="#8ea676"
+                          />
+                          <path
+                            d="M128 118c8-6 18 0 20 12 2 14-4 28-10 36-6-8-12-28-10-48z"
+                            fill="#748f63"
+                          />
+                          <ellipse cx="200" cy="38" rx="46" ry="8" fill="#ffffff" opacity="0.7" />
+                          <g
+                            fill="none"
+                            stroke="#ffffff"
+                            stroke-linecap="round"
+                            stroke-width="4"
+                            opacity="0.45"
+                          >
+                            <path d="M138 92c20-8 36-2 50-6" />
+                            <path d="M196 188c18-8 40-4 56-12" />
+                            <path d="M232 118c14-4 26 4 38-2" />
+                            <path d="M150 150c10 2 18-2 26 2" />
+                          </g>
+                          <rect
+                            x="116"
+                            y="36"
+                            width="168"
+                            height="168"
+                            fill={`url(#${uid}-night)`}
+                          />
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+                )}
+
+                {selected.kind === 'audio' && (
+                  <div class="qcs-audio">
+                    <div class="qcs-canvas qcs-canvas-audio">
+                      <span class="qcs-audio-tile">
+                        <Icon name="waveform" />
+                      </span>
+                    </div>
+                    <div class="qcs-player">
+                      <i class="qcs-play" />
+                      <span class="qcs-track">
+                        <span
+                          class="qcs-track-fill"
+                          style={`width:${(media.at * 100).toFixed(2)}%`}
+                        />
+                      </span>
+                      <span class="qcs-time">{toolbar}</span>
+                    </div>
+                  </div>
+                )}
+
+                {selected.kind === 'video' && (
+                  <div class="qcs-video">
+                    <div class="qcs-canvas qcs-canvas-frame">
+                      <svg
+                        viewBox="0 0 400 225"
+                        preserveAspectRatio="xMidYMid slice"
+                        aria-hidden="true"
+                      >
+                        <defs>
+                          <linearGradient id={`${uid}-sky`} x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#6f7e8c" />
+                            <stop offset="1" stop-color="#b3bdc6" />
+                          </linearGradient>
+                        </defs>
+                        <rect width="400" height="225" fill={`url(#${uid}-sky)`} />
+                        <path
+                          d="M0 132c50-26 96-30 150-14s96 4 142-12 80-8 108 4v115H0z"
+                          fill="#7f8f92"
+                        />
+                        <path d="M0 150c60-14 120-10 190 0s140 8 210-6v81H0z" fill="#61716a" />
+                        <g fill="#4b5c54">
+                          <path d="M40 152l14-42 14 42z" />
+                          <path d="M62 154l11-32 11 32z" />
+                          <path d="M318 146l16-48 16 48z" />
+                          <path d="M344 148l11-30 11 30z" />
+                        </g>
+                        <path d="M0 168h400v57H0z" fill="#52604f" />
+                        <path d="M178 172l38-52 38 52z" fill="#b07a54" />
+                        <path d="M208 172l8-24 8 24z" fill="#5b3f2c" />
+                        <ellipse cx="120" cy="196" rx="54" ry="7" fill="#9aa7b0" opacity="0.55" />
+                        <ellipse cx="300" cy="206" rx="40" ry="5" fill="#9aa7b0" opacity="0.5" />
+                        <g fill="none" stroke="#e8eef3" stroke-width="0.8" opacity="0.5">
+                          <ellipse cx="104" cy="196" rx="9" ry="2" />
+                          <ellipse cx="140" cy="195" rx="6" ry="1.5" />
+                          <ellipse cx="296" cy="206" rx="7" ry="1.6" />
+                        </g>
+                        <g
+                          stroke="#eef3f7"
+                          stroke-linecap="round"
+                          stroke-width="1.2"
+                          opacity="0.55"
+                        >
+                          {rain.map((drop) => (
+                            <line
+                              x1={drop.x}
+                              y1={drop.y}
+                              x2={drop.x - 4}
+                              y2={drop.y + drop.length}
+                            />
+                          ))}
+                        </g>
+                      </svg>
+                    </div>
+                    <div class="qcs-player">
+                      <i class="qcs-play" />
+                      <span class="qcs-track">
+                        <span
+                          class="qcs-track-fill"
+                          style={`width:${(media.at * 100).toFixed(2)}%`}
+                        />
+                        <i class="qcs-knob" style={`left:${(media.at * 100).toFixed(2)}%`} />
+                      </span>
+                      <span class="qcs-time">{toolbar}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div class="qcs-actions">
+                  <span class="qcs-button qcs-button-strong">{labels.open}</span>
+                  <span class="qcs-button">{labels.reveal}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    })}
+
+    <div class="qcs-foot">
+      <span class="qcs-status">
+        <span>{labels.ready}</span>
+        <i class="qcs-progress"></i>
+      </span>
+      <span class="qcs-hint">{labels.shortcut}</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .qcs {
+    /* The real app's blues: focus ring, selected row and list border. */
+    --qcs-focus: #2856cf;
+    --qcs-select: #e4ecff;
+    --qcs-select-ink: #102957;
+    --qcs-list-line: #cbd1de;
+    display: flex;
+    height: 37em;
+    flex-direction: column;
+  }
+  .qcs-body {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.9em;
+    padding: 1.25em 1.6em 0.95em;
+  }
+
+  /* Header */
+  .qcs-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+  }
+  .qcs-brand {
+    display: grid;
+    min-width: 0;
+    gap: 0.15em;
+  }
+  .qcs-heading {
+    color: var(--ink-900);
+    font-size: 1.45em;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .qcs-subtitle {
+    color: var(--ink-500);
+    font-size: 0.85em;
+  }
+  .qcs-buttons,
+  .qcs-actions {
+    display: flex;
+    flex: none;
+    gap: 0.5em;
+  }
+  .qcs-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    padding: 0.38em 0.9em;
+    border: 1px solid var(--oat-300);
+    border-radius: 0.45em;
+    background: var(--paper);
+    color: var(--ink-700);
+    font-size: 0.8em;
+    white-space: nowrap;
+  }
+  .qcs-button-strong {
+    border-color: var(--product-accent-ink);
+    color: var(--product-accent-ink);
+  }
+  .qcs-ready-dot {
+    width: 0.5em;
+    height: 0.5em;
+    border-radius: 50%;
+    background: var(--product-accent);
+  }
+
+  /* Scene: search field, filters, results and preview */
+  .qcs-scene {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.75em;
+  }
+  .qcs-search {
+    display: flex;
+    min-height: 3.2em;
+    align-items: center;
+    gap: 0.65em;
+    padding: 0 0.9em;
+    border: 2px solid var(--qcs-focus);
+    border-radius: 0.6em;
+    background: var(--paper);
+    box-shadow: 0 0 0 0.25em color-mix(in srgb, var(--qcs-focus) 12%, transparent);
+    color: var(--ink-900);
+    font-size: 1.1em;
+  }
+  .qcs-search :global(.icon) {
+    color: var(--product-accent);
+  }
+  .qcs-query {
+    overflow: hidden;
+    flex: 0 1 auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qcs-query::after {
+    display: inline-block;
+    width: 1.5px;
+    height: 1.1em;
+    margin-inline-start: 0.12em;
+    background: var(--qcs-focus);
+    content: '';
+    vertical-align: -0.18em;
+  }
+  .qcs-clear {
+    position: relative;
+    width: 1.05em;
+    height: 1.05em;
+    flex: none;
+    margin-inline-start: auto;
+    border-radius: 50%;
+    background: var(--oat-200);
+  }
+  .qcs-clear::before,
+  .qcs-clear::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.5em;
+    height: 1.5px;
+    background: var(--ink-500);
+    content: '';
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  .qcs-clear::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  .qcs-filters {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    font-size: 0.82em;
+  }
+  .qcs-combo {
+    display: inline-flex;
+    min-width: 9.5em;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 0.38em 0.75em;
+    border: 1px solid var(--oat-300);
+    border-radius: 0.4em;
+    background: var(--paper);
+    color: var(--ink-700);
+    white-space: nowrap;
+  }
+  .qcs-root {
+    min-width: 13em;
+  }
+  .qcs-chevron {
+    width: 0.45em;
+    height: 0.45em;
+    border: solid var(--ink-500);
+    border-width: 0 1.5px 1.5px 0;
+    transform: translateY(-0.12em) rotate(45deg);
+  }
+  .qcs-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    margin-inline-start: 0.3em;
+    color: var(--ink-700);
+    white-space: nowrap;
+  }
+  .qcs-box {
+    width: 0.95em;
+    height: 0.95em;
+    border: 1px solid var(--ink-500);
+    border-radius: 0.2em;
+    background: var(--paper);
+  }
+  .qcs-summary {
+    overflow: hidden;
+    margin-inline-start: auto;
+    color: var(--ink-500);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .qcs-split {
+    display: grid;
+    min-height: 0;
+    flex: 1;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 1.3em;
+  }
+
+  /* Results */
+  .qcs-results {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.15em;
+    margin: 0;
+    padding: 0.3em;
+    overflow: hidden;
+    border: 1px solid var(--qcs-list-line);
+    border-radius: 0.5em;
+    background: var(--paper);
+    list-style: none;
+  }
+  .qcs-row {
+    display: grid;
+    align-items: center;
+    padding: 0.6em 0.65em;
+    border-radius: 0.35em;
+    column-gap: 0.7em;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    row-gap: 0.1em;
+  }
+  .qcs-row.is-selected {
+    background: var(--qcs-select);
+  }
+  .qcs-glyph {
+    display: grid;
+    width: 2.3em;
+    height: 2.3em;
+    place-items: center;
+    border-radius: 0.45em;
+    background: var(--oat-200);
+    color: var(--ink-700);
+    grid-row: span 2;
+  }
+  .qcs-glyph :global(.icon) {
+    width: 1.2em;
+    height: 1.2em;
+  }
+  .qcs-glyph-pdf {
+    background: var(--clay-50);
+    color: var(--clay-600);
+  }
+  .qcs-glyph-text,
+  .qcs-glyph-code {
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+  }
+  .is-selected .qcs-glyph {
+    background: var(--paper);
+  }
+  .qcs-row-title {
+    overflow: hidden;
+    color: var(--ink-900);
+    font-size: 0.92em;
+    font-weight: 550;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .is-selected .qcs-row-title {
+    color: var(--qcs-select-ink);
+  }
+  .qcs-row-meta {
+    overflow: hidden;
+    color: var(--ink-500);
+    font-size: 0.76em;
+    grid-column: 2 / 4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qcs-badge {
+    padding: 0.12em 0.6em;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.7em;
+    white-space: nowrap;
+  }
+  .qcs-badge-semantic {
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+  }
+  .qcs-badge-both {
+    border-color: color-mix(in srgb, var(--product-accent-ink) 45%, transparent);
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+  }
+  .qcs-badge-keyword {
+    border-color: var(--oat-300);
+    background: var(--ivory-100);
+    color: var(--ink-700);
+  }
+  .is-selected .qcs-badge {
+    background: var(--paper);
+  }
+
+  /* Preview */
+  .qcs-preview {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.7em;
+  }
+  .qcs-preview-head {
+    display: grid;
+    gap: 0.1em;
+  }
+  .qcs-preview-title {
+    overflow: hidden;
+    color: var(--ink-900);
+    font-size: 1.05em;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qcs-preview-location {
+    color: var(--ink-500);
+    font-size: 0.78em;
+  }
+  .qcs-pdf,
+  .qcs-image,
+  .qcs-audio,
+  .qcs-video {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+  .qcs-canvas {
+    position: relative;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 0.5em;
+  }
+  .qcs-canvas svg {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .qcs-spin,
+  .qcs-chip {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 1.4em;
+    padding: 0.22em 0.5em 0.22em 0.7em;
+    border: 1px solid var(--oat-300);
+    border-radius: 0.35em;
+    background: var(--paper);
+    color: var(--ink-700);
+    font-size: 0.74em;
+  }
+  .qcs-chip {
+    padding-inline-end: 0.7em;
+  }
+  .qcs-spin-arrows {
+    width: 0.4em;
+    height: 0.9em;
+    background:
+      linear-gradient(135deg, transparent 50%, var(--ink-500) 50%) top / 100% 40% no-repeat,
+      linear-gradient(45deg, transparent 50%, var(--ink-500) 50%) bottom / 100% 40% no-repeat;
+    opacity: 0.8;
+  }
+
+  /* PDF page, shown fit to width like the app's single-page PDF view. */
+  .qcs-canvas-paper {
+    padding: 1em 1.2em 0;
+    background: var(--oat-200);
+  }
+  .qcs-page {
+    display: grid;
+    min-height: 100%;
+    align-content: start;
+    gap: 0.55em;
+    padding: 1.3em 1.6em;
+    border-radius: 0.2em 0.2em 0 0;
+    background: var(--paper);
+    box-shadow: 0 0.1em 0.6em rgb(31 30 27 / 0.08);
+    color: var(--ink-700);
+  }
+  .qcs-page-mast {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.3em;
+  }
+  .qcs-page-mast i {
+    width: 1.3em;
+    height: 1.3em;
+    border-radius: 50%;
+    background: var(--oat-300);
+  }
+  .qcs-page-mast i + i {
+    width: 7em;
+    height: 0.4em;
+    border-radius: 1em;
+    background: var(--oat-200);
+  }
+  .qcs-page-title {
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: 1.05em;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .qcs-page-line {
+    font-size: 0.78em;
+    line-height: 1.6;
+  }
+  .qcs-page-rest {
+    display: grid;
+    gap: 0.6em;
+    margin-top: 0.4em;
+  }
+  .qcs-page-rest i {
+    height: 0.38em;
+    border-radius: 1em;
+    background: var(--oat-200);
+  }
+  .qcs-page-rest i:nth-child(2n) {
+    width: 86%;
+  }
+  .qcs-page-rest i:last-child {
+    width: 58%;
+  }
+
+  /* Image */
+  .qcs-canvas-space {
+    background: radial-gradient(60% 90% at 50% 50%, #1a2a4a 0%, #0a1222 100%);
+  }
+
+  /* Audio and video */
+  /* The real audio preview is a player only, so the canvas shows a plain audio tile. */
+  .qcs-canvas-audio {
+    display: grid;
+    background: var(--ivory-100);
+    place-items: center;
+  }
+  .qcs-audio-tile {
+    display: grid;
+    width: 4.5em;
+    height: 4.5em;
+    border-radius: 1em;
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+    place-items: center;
+  }
+  .qcs-audio-tile :global(.icon) {
+    width: 2.2em;
+    height: 2.2em;
+  }
+  .qcs-canvas-frame {
+    background: var(--ink-900);
+  }
+  .qcs-player {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+    padding: 0 0.2em;
+  }
+  .qcs-play {
+    width: 0;
+    height: 0;
+    flex: none;
+    border-block: 0.42em solid transparent;
+    border-inline-start: 0.68em solid var(--ink-700);
+  }
+  .qcs-track {
+    position: relative;
+    height: 0.3em;
+    flex: 1;
+    border-radius: 1em;
+    background: var(--oat-200);
+  }
+  .qcs-track-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: var(--product-accent);
+  }
+  .qcs-knob {
+    position: absolute;
+    top: 50%;
+    width: 0.85em;
+    height: 0.85em;
+    border: 2px solid var(--paper);
+    border-radius: 50%;
+    background: var(--product-accent-ink);
+    box-shadow: var(--shadow-1);
+    transform: translate(-50%, -50%);
+  }
+  .qcs-time {
+    color: var(--ink-700);
+    font-size: 0.76em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Index status and shortcut */
+  .qcs-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+    padding-top: 0.75em;
+    border-top: 1px solid var(--line);
+    color: var(--ink-500);
+    font-size: 0.78em;
+  }
+  .qcs-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9em;
+    white-space: nowrap;
+  }
+  .qcs-progress {
+    width: 9em;
+    height: 0.35em;
+    border-radius: 1em;
+    background: var(--product-accent);
+    opacity: 0.85;
+  }
+  .qcs-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Tablets, phones and home-page cards: one column, the preview below the list. */
+  @container (max-width: 720px) {
+    .qcs {
+      --demo-width: 42 !important; /* overrides the inline width */
+      height: 45em;
+    }
+    .qcs-body {
+      padding: 1.1em 1.3em 0.9em;
+    }
+    /* The selected row already names the file, so the stacked preview skips its header. */
+    .qcs-buttons,
+    .qcs-root,
+    .qcs-check,
+    .qcs-progress,
+    .qcs-preview-head {
+      display: none;
+    }
+    .qcs-split {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 11.6em minmax(0, 1fr);
+      gap: 1em;
+    }
+    .qcs-results {
+      gap: 0.1em;
+    }
+    .qcs-row {
+      padding-block: 0.5em;
+    }
+  }
+  @container (max-width: 440px) {
+    .qcs {
+      --demo-width: 32 !important;
+      height: 46em;
+    }
+    .qcs-hint {
+      display: none;
+    }
+  }
+
+  /* Home-page cards show the top of the window: search, filters and the first results. */
+  .qcs-thumb .qcs-head {
+    display: none;
+  }
+</style>

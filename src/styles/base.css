@@ -1,0 +1,308 @@
+/* Reset, typography and shared utilities. Component styles live in their .astro files. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --header-height: 72px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-height: 64px;
+  }
+}
+
+html {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-height) + 16px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Latin pages: calm serif display with slight negative tracking. */
+:root:lang(en) {
+  /* Latin system fonts first so quotes and apostrophes keep Latin widths. Chinese still falls back to Noto. */
+  --font-body:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC Variable',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --leading-display: 1.08;
+  --leading-heading: 1.2;
+  --leading-body: 1.6;
+  --tracking-display: -0.02em;
+  --display-weight: 440;
+  --heading-weight: 500;
+  --measure: 36em;
+}
+
+/* Chinese pages: open leading, never negative tracking, a little more weight for serif strokes. */
+:root:lang(zh-CN) {
+  --leading-display: 1.3;
+  --leading-heading: 1.4;
+  --leading-body: 1.85;
+  --tracking-display: 0.02em;
+  --display-weight: 600;
+  --heading-weight: 600;
+  --measure: 38em;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-weight: var(--heading-weight);
+  line-height: var(--leading-heading);
+  text-wrap: balance;
+  line-break: strict;
+}
+
+/* Chinese headings break at punctuation, never inside a word. Overflow still wraps as a last resort. */
+:lang(zh-CN) :is(h1, h2, h3, .card-headline) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-spacing-trim: trim-start;
+}
+
+h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--display-weight);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--display-weight);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+}
+
+h3 {
+  font-size: var(--text-xl);
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+:lang(zh-CN) p {
+  text-autospace: normal;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--clay-50);
+  color: var(--ink-900);
+}
+
+/* Layout helpers */
+.container {
+  width: var(--container);
+  margin-inline: auto;
+}
+
+.container-narrow {
+  width: var(--container-narrow);
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: var(--section-y);
+}
+
+.band {
+  background: var(--ivory-100);
+}
+
+.band-oat {
+  background: var(--oat-200);
+}
+
+.lead {
+  max-inline-size: var(--measure);
+  color: var(--text);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+}
+
+:lang(zh-CN) .lead {
+  line-height: 1.8;
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-4);
+  color: var(--accent-ink);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:lang(zh-CN) .eyebrow {
+  letter-spacing: 0.12em;
+  text-transform: none;
+}
+
+/* Buttons and links */
+.button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--ink-900);
+  border-radius: var(--radius-pill);
+  background: var(--ink-900);
+  color: var(--ivory-50);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+
+.button:hover {
+  border-color: var(--ink-700);
+  background: var(--ink-700);
+}
+
+.button-secondary {
+  border-color: var(--oat-300);
+  background: transparent;
+  color: var(--ink-900);
+}
+
+.button-secondary:hover {
+  border-color: var(--ink-500);
+  background: var(--ivory-100);
+}
+
+.button[aria-disabled='true'] {
+  border-color: var(--oat-300);
+  background: var(--ivory-100);
+  color: var(--ink-500);
+  cursor: not-allowed;
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color var(--dur-1) var(--ease-out);
+}
+
+.text-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.button .icon,
+.text-link .icon {
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.button:hover .icon-arrow,
+.text-link:hover .icon-arrow {
+  transform: translateX(3px);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-5);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: var(--space-3);
+  left: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-m);
+  background: var(--ink-900);
+  color: var(--ivory-50);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+main:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

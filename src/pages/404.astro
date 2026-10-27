@@ -1,23 +1,91 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { ui } from '../content/ui';
+import LineArt from '../components/LineArt.astro';
+import { products } from '../content/products.ts';
+import { ui } from '../content/ui.ts';
 import { route } from '../lib/site.mjs';
-const t = ui.zh;
+const zh = ui.zh.notFound;
+const en = ui.en.notFound;
 ---
 
-<SiteLayout locale="zh" title="404 · QCopilots" description={t.common.notFoundDescription} noindex>
-  <section class="not-found container">
+<SiteLayout locale="zh" title="404 · QCopilots" description={zh.description} noindex>
+  <section class="not-found container-narrow">
+    <LineArt class="not-found-art" />
     <p class="eyebrow">404</p>
-    <h1>{t.common.notFoundTitle}</h1>
-    <p>{t.common.notFoundDescription}</p>
-    <p lang="en">This page could not be found. Continue from the home page.</p>
-    <div class="hero-buttons">
+    <h1>{zh.title}</h1>
+    <p class="lead">{zh.description}</p>
+    <p class="english" lang="en">
+      <strong>{en.title}.</strong> {en.description}
+    </p>
+    <div class="actions">
       <a class="button" href={route('zh')}>
-        {t.common.backHome}
+        {zh.home}
       </a>
-      <a class="text-link" href={route('en')} lang="en">
-        English home
+      <a class="button button-secondary" href={route('en')} lang="en">
+        {en.home}
       </a>
     </div>
+    <ul class="product-links">
+      {products.map((product) => (
+        <li>
+          <span class="product-name">{product.locales.zh.name}</span>
+          <a href={route('zh', `products/${product.id}`)}>
+            <span class="visually-hidden">{product.locales.zh.name} </span>中文
+          </a>
+          <span aria-hidden="true">/</span>
+          <a href={route('en', `products/${product.id}`)} lang="en">
+            <span class="visually-hidden">{product.locales.en.name} </span>English
+          </a>
+        </li>
+      ))}
+    </ul>
   </section>
 </SiteLayout>
+
+<style>
+  .not-found {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-5);
+    padding-block: var(--space-8) var(--space-6);
+    text-align: center;
+  }
+  .not-found :global(.not-found-art) {
+    width: min(220px, 60%);
+  }
+  .not-found .eyebrow {
+    margin: 0;
+  }
+  .lead,
+  .english {
+    margin-inline: auto;
+  }
+  .english {
+    max-width: 34em;
+    color: var(--text-muted);
+  }
+  .actions {
+    justify-content: center;
+  }
+  .product-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-3) var(--space-6);
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    color: var(--text-muted);
+    list-style: none;
+  }
+  .product-name {
+    color: var(--ink-900);
+    font-weight: 600;
+  }
+  .product-links li {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .product-links a {
+    color: var(--accent-ink);
+  }
+</style>

@@ -1,21 +1,102 @@
 ---
+import type { IconName } from '../content/icons.ts';
 import arrow from '@phosphor-icons/core/assets/regular/arrow-right.svg?raw';
+import arrowOut from '@phosphor-icons/core/assets/regular/arrow-up-right.svg?raw';
 import menu from '@phosphor-icons/core/assets/regular/list.svg?raw';
 import close from '@phosphor-icons/core/assets/regular/x.svg?raw';
-import pin from '@phosphor-icons/core/assets/regular/map-pin.svg?raw';
-import search from '@phosphor-icons/core/assets/regular/magnifying-glass.svg?raw';
-import layers from '@phosphor-icons/core/assets/regular/stack.svg?raw';
-import check from '@phosphor-icons/core/assets/regular/check.svg?raw';
 import plus from '@phosphor-icons/core/assets/regular/plus.svg?raw';
 import download from '@phosphor-icons/core/assets/regular/download-simple.svg?raw';
+import pause from '@phosphor-icons/core/assets/regular/pause.svg?raw';
+import play from '@phosphor-icons/core/assets/regular/play.svg?raw';
+import map from '@phosphor-icons/core/assets/light/map-trifold-light.svg?raw';
+import layers from '@phosphor-icons/core/assets/light/stack-light.svg?raw';
+import chat from '@phosphor-icons/core/assets/light/chat-circle-text-light.svg?raw';
+import route from '@phosphor-icons/core/assets/light/path-light.svg?raw';
+import printer from '@phosphor-icons/core/assets/light/printer-light.svg?raw';
+import terminal from '@phosphor-icons/core/assets/light/terminal-window-light.svg?raw';
+import upload from '@phosphor-icons/core/assets/light/upload-simple-light.svg?raw';
+import lock from '@phosphor-icons/core/assets/light/lock-simple-light.svg?raw';
+import shield from '@phosphor-icons/core/assets/light/shield-check-light.svg?raw';
+import drive from '@phosphor-icons/core/assets/light/hard-drives-light.svg?raw';
+import offline from '@phosphor-icons/core/assets/light/wifi-slash-light.svg?raw';
+import search from '@phosphor-icons/core/assets/light/magnifying-glass-light.svg?raw';
+import documentIcon from '@phosphor-icons/core/assets/light/file-text-light.svg?raw';
+import image from '@phosphor-icons/core/assets/light/image-light.svg?raw';
+import waveform from '@phosphor-icons/core/assets/light/waveform-light.svg?raw';
+import film from '@phosphor-icons/core/assets/light/film-strip-light.svg?raw';
+import code from '@phosphor-icons/core/assets/light/code-light.svg?raw';
+import translate from '@phosphor-icons/core/assets/light/translate-light.svg?raw';
+import eye from '@phosphor-icons/core/assets/light/eye-light.svg?raw';
+import folder from '@phosphor-icons/core/assets/light/folder-open-light.svg?raw';
+import cpu from '@phosphor-icons/core/assets/light/cpu-light.svg?raw';
+import keyboard from '@phosphor-icons/core/assets/light/keyboard-light.svg?raw';
+import scan from '@phosphor-icons/core/assets/light/scan-light.svg?raw';
+import check from '@phosphor-icons/core/assets/light/check-circle-light.svg?raw';
+import globe from '@phosphor-icons/core/assets/light/globe-simple-light.svg?raw';
+import compass from '@phosphor-icons/core/assets/light/compass-light.svg?raw';
+import sparkle from '@phosphor-icons/core/assets/light/sparkle-light.svg?raw';
+import hand from '@phosphor-icons/core/assets/light/hand-pointing-light.svg?raw';
+
+type UiIcon = 'arrow' | 'arrow-out' | 'menu' | 'close' | 'plus' | 'download' | 'pause' | 'play';
 interface Props {
-  name?: 'arrow' | 'menu' | 'close' | 'pin' | 'search' | 'layers' | 'check' | 'plus' | 'download';
+  name?: IconName | UiIcon;
   class?: string;
 }
 const { name = 'arrow', class: className = '' } = Astro.props;
-const icons = { arrow, menu, close, pin, search, layers, check, plus, download };
+const icons: Record<IconName | UiIcon, string> = {
+  arrow,
+  'arrow-out': arrowOut,
+  menu,
+  close,
+  plus,
+  download,
+  pause,
+  play,
+  map,
+  layers,
+  chat,
+  route,
+  printer,
+  terminal,
+  upload,
+  lock,
+  shield,
+  drive,
+  offline,
+  search,
+  document: documentIcon,
+  image,
+  waveform,
+  film,
+  code,
+  translate,
+  eye,
+  folder,
+  cpu,
+  keyboard,
+  scan,
+  check,
+  globe,
+  compass,
+  sparkle,
+  hand,
+};
 ---
 
-<span class:list={['icon', className]} aria-hidden="true">
+<span class:list={['icon', `icon-${name}`, className]} aria-hidden="true">
   <Fragment set:html={icons[name]} />
 </span>
+
+<style is:global>
+  .icon {
+    display: inline-flex;
+    flex: none;
+    width: 1.25em;
+    height: 1.25em;
+  }
+  .icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+  }
+</style>

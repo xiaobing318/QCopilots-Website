@@ -1,0 +1,69 @@
+---
+import type { Locale } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+import SectionIntro from '../SectionIntro.astro';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].home;
+---
+
+<section id="privacy" class="section" aria-labelledby="privacy-title">
+  <div class="container">
+    <SectionIntro
+      id="privacy-title"
+      eyebrow={t.principlesEyebrow}
+      title={t.principlesTitle}
+      align="center"
+    />
+    <ul class="principles">
+      {t.principles.map((principle) => (
+        <li>
+          <span class="principle-icon">
+            <Icon name={principle.icon} />
+          </span>
+          <h3>{principle.title}</h3>
+          <p>{principle.description}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border-top: 1px solid var(--oat-300);
+  }
+  .principle-icon {
+    display: inline-flex;
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-2);
+    border-radius: 50%;
+    background: var(--clay-50);
+    color: var(--clay-600);
+  }
+  .principle-icon :global(.icon) {
+    width: 24px;
+    height: 24px;
+  }
+  p {
+    color: var(--text);
+  }
+</style>

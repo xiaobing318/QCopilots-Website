@@ -1,0 +1,213 @@
+---
+import type { Locale } from '../content/types.ts';
+import { products } from '../content/products.ts';
+import { ui } from '../content/ui.ts';
+import { asset, route } from '../lib/site.mjs';
+import Icon from './Icon.astro';
+import LanguageSwitch from './LanguageSwitch.astro';
+interface Props {
+  locale: Locale;
+  slug?: string;
+}
+const { locale, slug = '' } = Astro.props;
+const t = ui[locale].nav;
+---
+
+<header class="site-header">
+  <div class="header-inner container">
+    <a class="brand" href={route(locale)}>
+      <img src={asset('/images/qcopilots-icon.svg')} width="32" height="32" alt="" />
+      <span>QCopilots</span>
+    </a>
+    <nav id="primary-nav" aria-label={t.products}>
+      <a href={`${route(locale)}#products`}>{t.products}</a>
+      {products.map((product) => (
+        <a
+          href={route(locale, `products/${product.id}`)}
+          aria-current={slug === `products/${product.id}` ? 'page' : undefined}
+        >
+          {product.locales[locale].name}
+        </a>
+      ))}
+    </nav>
+    <div class="header-actions">
+      <LanguageSwitch locale={locale} slug={slug} />
+      <button
+        class="menu-toggle"
+        type="button"
+        data-testid="mobile-menu-toggle"
+        aria-label={t.menu}
+        aria-expanded="false"
+        aria-controls="primary-nav"
+        data-open-label={t.menu}
+        data-close-label={t.close}
+      >
+        <Icon name="menu" class="menu-open-icon" />
+        <Icon name="close" class="menu-close-icon" />
+      </button>
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('.site-header');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-testid="mobile-menu-toggle"]');
+  function setMenu(open: boolean) {
+    toggle?.setAttribute('aria-expanded', String(open));
+    toggle?.setAttribute(
+      'aria-label',
+      (open ? toggle.dataset.closeLabel : toggle.dataset.openLabel) || 'Menu',
+    );
+    header?.classList.toggle('menu-is-open', open);
+  }
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    setMenu(open);
+    if (open) document.querySelector<HTMLAnchorElement>('#primary-nav a')?.focus();
+  });
+  document
+    .querySelectorAll('#primary-nav a')
+    .forEach((link) => link.addEventListener('click', () => setMenu(false)));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
+      setMenu(false);
+      toggle.focus();
+    }
+  });
+  matchMedia('(min-width: 768px)').addEventListener('change', () => setMenu(false));
+  const onScroll = () => header?.classList.toggle('is-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  header?.classList.add('navigation-ready');
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    z-index: 50;
+    top: 0;
+    border-bottom: 1px solid transparent;
+    background: color-mix(in srgb, var(--ivory-50) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px);
+    transition: border-color var(--dur-2) var(--ease-out);
+  }
+  .site-header.is-scrolled {
+    border-bottom-color: var(--line);
+  }
+  .header-inner {
+    display: flex;
+    min-height: 72px;
+    align-items: center;
+    gap: var(--space-6);
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+  .brand img {
+    width: 32px;
+    height: 32px;
+  }
+  #primary-nav {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+  #primary-nav a {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-pill);
+    color: var(--ink-700);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition:
+      background-color var(--dur-1) var(--ease-out),
+      color var(--dur-1) var(--ease-out);
+  }
+  #primary-nav a:hover,
+  #primary-nav a[aria-current='page'] {
+    background: var(--oat-200);
+    color: var(--ink-900);
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .menu-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--oat-300);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .menu-toggle :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
+  /* Icon renders its own element, so these selectors must reach past the scoped styles. */
+  .menu-toggle :global(.menu-close-icon) {
+    display: none;
+  }
+  .menu-is-open .menu-toggle :global(.menu-open-icon) {
+    display: none;
+  }
+  .menu-is-open .menu-toggle :global(.menu-close-icon) {
+    display: inline-flex;
+  }
+
+  @media (max-width: 767px) {
+    .header-inner {
+      min-height: 64px;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+    .brand {
+      margin-right: auto;
+    }
+    /* Without JavaScript the links stay visible as a simple stacked list. */
+    #primary-nav {
+      order: 3;
+      flex-basis: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      padding-bottom: var(--space-4);
+    }
+    #primary-nav a {
+      padding: var(--space-3) var(--space-2);
+      border-radius: var(--radius-m);
+      font-size: var(--text-md);
+    }
+    /* With JavaScript (class set in the page head) the links open as a panel below the bar. */
+    :global(.js) .menu-toggle {
+      display: inline-flex;
+    }
+    :global(.js) #primary-nav {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      left: 0;
+      padding: var(--space-2) var(--gutter) var(--space-5);
+      border-bottom: 1px solid var(--line);
+      background: var(--ivory-50);
+      box-shadow: var(--shadow-2);
+    }
+    :global(.js) .site-header:not(.menu-is-open) #primary-nav {
+      display: none;
+    }
+  }
+</style>

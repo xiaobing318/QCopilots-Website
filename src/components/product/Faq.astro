@@ -1,0 +1,79 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { product, locale } = Astro.props;
+const faq = product.locales[locale].faq;
+const t = ui[locale].product;
+---
+
+<section id="faq" class="section" aria-labelledby="faq-title">
+  <div class="container faq-layout">
+    <h2 id="faq-title">{t.sections.faq}</h2>
+    <div class="faq-list">
+      {faq.map((item) => (
+        <details>
+          <summary>
+            <span>{item.question}</span>
+            <Icon name="plus" />
+          </summary>
+          <p>{item.answer}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    gap: var(--space-7);
+  }
+  .faq-list {
+    border-top: 1px solid var(--oat-300);
+  }
+  details {
+    border-bottom: 1px solid var(--oat-300);
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-5);
+    color: var(--ink-900);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary :global(.icon) {
+    color: var(--ink-500);
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+  details[open] summary :global(.icon) {
+    transform: rotate(45deg);
+  }
+  summary:focus-visible {
+    outline-offset: 2px;
+  }
+  details p {
+    max-width: var(--measure);
+    padding-bottom: var(--space-5);
+    color: var(--text);
+  }
+  @media (max-width: 900px) {
+    .faq-layout {
+      grid-template-columns: 1fr;
+      gap: var(--space-5);
+    }
+  }
+</style>

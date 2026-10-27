@@ -1,0 +1,77 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+import SectionIntro from '../SectionIntro.astro';
+interface Props {
+  product: Product;
+  locale: Locale;
+}
+const { product, locale } = Astro.props;
+const examples = product.locales[locale].examples;
+const t = ui[locale].product;
+---
+
+<section id="use-cases" class="section band" aria-labelledby="use-cases-title">
+  <div class="container">
+    <SectionIntro
+      id="use-cases-title"
+      eyebrow={t.sections.examples}
+      title={examples.title}
+      lead={examples.intro}
+    />
+    <ul class="example-list">
+      {examples.items.map((item) => (
+        <li>
+          <p class="visually-hidden">{t.youAsk}</p>
+          <q>{item.prompt}</q>
+          <p class="outcome">
+            <Icon name="arrow" />
+            <span class="visually-hidden">{t.youGet}: </span>
+            {item.outcome}
+          </p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .example-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 28rem), 1fr));
+    gap: 0 var(--space-7);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: grid;
+    gap: var(--space-3);
+    padding-block: var(--space-6);
+    border-top: 1px solid var(--oat-300);
+  }
+  q {
+    display: block;
+    color: var(--ink-900);
+    text-wrap: pretty;
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-style: italic;
+    line-height: 1.35;
+  }
+  :lang(zh-CN) q {
+    font-style: normal;
+  }
+  .outcome {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    color: var(--text);
+  }
+  .outcome :global(.icon) {
+    flex: none;
+    align-self: center;
+    color: var(--product-accent-ink);
+  }
+</style>

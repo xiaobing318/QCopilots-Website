@@ -1,5 +1,9 @@
 # Chrome 用户体验审查与远端 CI 记录
 
+> 历史记录：本文描述 2026-10-23 的旧版设计（AI 生成插图与第 1 套视觉稿）。这些素材已在 2026-10-26 的暖色编辑风格改版中移除，当前状态见 [实施与验证记录](verification.md)。
+>
+> Historical record: this describes the 2026-10-23 design (AI-generated illustrations and the first mock-up). Those assets were removed in the 2026-10-26 warm editorial redesign. See [Implementation verification](verification.md) for the current state.
+
 日期：2026-10-23。此次审查延续 [首次本地验证](verification.md)，根据用户要求将官网提交至远端 `main` 分支，运行 GitHub Actions，并通过真实 Chrome 模拟访客浏览。主代理负责 Chrome 操作与证据核验，并行子代理分别检查 CI、交互边界和验证记录。
 
 本记录区分浏览器实际观察、自动化回归和仍需目标设备验收的内容。截图与操作证据随本次交付报告提供，不依赖开发者电脑的绝对路径。

@@ -1,0 +1,97 @@
+---
+import type { Locale } from '../../content/types.ts';
+import { products } from '../../content/products.ts';
+import { ui } from '../../content/ui.ts';
+import { themeStyle } from '../../lib/i18n.ts';
+import { route } from '../../lib/site.mjs';
+import SectionIntro from '../SectionIntro.astro';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].home;
+const rows = products.flatMap((product) =>
+  product.locales[locale].examples.items.slice(0, 2).map((example) => ({ product, example })),
+);
+---
+
+<section id="use-cases" class="section band" aria-labelledby="use-cases-title">
+  <div class="container">
+    <SectionIntro
+      id="use-cases-title"
+      eyebrow={t.examplesEyebrow}
+      title={t.examplesTitle}
+      lead={t.examplesLead}
+    />
+    <ul class="example-rows">
+      {rows.map(({ product, example }) => (
+        <li style={themeStyle(product.theme)}>
+          <q>{example.prompt}</q>
+          <div class="row-meta">
+            <p>{example.outcome}</p>
+            <a href={`${route(locale, `products/${product.id}`)}#use-cases`}>
+              {product.locales[locale].name}
+            </a>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .example-rows {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--oat-300);
+    list-style: none;
+  }
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--space-3) var(--space-7);
+    padding-block: var(--space-6);
+    border-bottom: 1px solid var(--oat-300);
+  }
+  q {
+    display: block;
+    color: var(--ink-900);
+    text-wrap: pretty;
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-style: italic;
+    line-height: 1.35;
+  }
+  :lang(zh-CN) q {
+    font-style: normal;
+  }
+  .row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2) var(--space-4);
+  }
+  .row-meta p {
+    color: var(--text);
+  }
+  .row-meta a {
+    flex: none;
+    padding: 0.15em 0.75em;
+    border: 1px solid color-mix(in srgb, var(--product-accent) 35%, transparent);
+    border-radius: var(--radius-pill);
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .row-meta a:hover {
+    border-color: var(--product-accent);
+  }
+  @media (max-width: 767px) {
+    li {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

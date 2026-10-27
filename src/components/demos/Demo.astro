@@ -1,0 +1,23 @@
+---
+import type { Locale, Product } from '../../content/types.ts';
+import DemoFrame from './DemoFrame.astro';
+import GenericDemo from './GenericDemo.astro';
+import { demoRegistry } from './registry.ts';
+interface Props {
+  product: Product;
+  locale: Locale;
+  variant?: 'full' | 'thumb';
+}
+const { product, locale, variant = 'full' } = Astro.props;
+const copy = product.locales[locale].demo;
+const Component = product.demo ? demoRegistry[product.demo] : GenericDemo;
+---
+
+<DemoFrame
+  demoKey={product.demo ?? 'generic'}
+  variant={variant}
+  caption={copy.caption}
+  locale={locale}
+>
+  <Component copy={copy} variant={variant} />
+</DemoFrame>

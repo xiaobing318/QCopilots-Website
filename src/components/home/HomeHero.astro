@@ -1,0 +1,90 @@
+---
+import type { Locale } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+import LineArt from '../LineArt.astro';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].home;
+---
+
+<section class="home-hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">{t.eyebrow}</p>
+      <h1>
+        <span>{t.title[0]}</span>
+        <span>{t.title[1]}</span>
+      </h1>
+      <p class="lead">{t.lead}</p>
+      <div class="actions">
+        <a class="button" href="#products">
+          {t.primaryCta}
+          <Icon name="arrow" class="icon-arrow" />
+        </a>
+        <a class="text-link" href="#use-cases">
+          {t.secondaryCta}
+          <Icon name="arrow" class="icon-arrow" />
+        </a>
+      </div>
+    </div>
+    <LineArt class="hero-art" />
+  </div>
+</section>
+
+<style>
+  .home-hero {
+    padding-block: clamp(3.5rem, 9vw, 8rem) clamp(3rem, 7vw, 6rem);
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.8fr);
+    align-items: center;
+    gap: var(--space-8);
+  }
+  .hero-copy {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-5);
+  }
+  .hero-copy .eyebrow {
+    margin: 0;
+  }
+  h1 {
+    font-size: var(--text-4xl);
+  }
+  :lang(zh-CN) h1 {
+    font-size: calc(var(--text-4xl) * 0.86);
+  }
+  h1 span {
+    display: block;
+  }
+  @media (min-width: 1100px) {
+    h1 span {
+      white-space: nowrap;
+    }
+  }
+  h1 span + span {
+    color: var(--ink-500);
+  }
+  .actions {
+    margin-top: var(--space-3);
+  }
+  @media (max-width: 900px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+    .hero-grid :global(.hero-art) {
+      width: min(280px, 60%);
+      justify-self: end;
+    }
+  }
+  @media (max-width: 640px) {
+    /* Phones open on the headline. The motif is decoration, so it steps aside. */
+    .hero-grid :global(.hero-art) {
+      display: none;
+    }
+  }
+</style>

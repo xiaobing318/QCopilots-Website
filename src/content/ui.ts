@@ -1,259 +1,250 @@
-import type { ContentItem, Locale, ProductId } from './products';
+import type { IconName } from './icons.ts';
+import type { Localized } from './types.ts';
 
-export interface UI {
+interface Principle {
+  icon: IconName;
+  title: string;
+  description: string;
+}
+
+export interface UiCopy {
+  meta: { siteName: string; description: string };
   nav: {
+    skip: string;
     products: string;
-    scenarios: string;
-    about: string;
-    download: string;
-    home: string;
     menu: string;
     close: string;
-    skip: string;
     language: string;
   };
   home: {
+    seoTitle: string;
     eyebrow: string;
-    titleLines: readonly [string, string];
-    description: string;
-    heroAlt: string;
-    heroPrompt: string;
+    title: readonly [string, string];
+    lead: string;
     primaryCta: string;
     secondaryCta: string;
-    productsEyebrow: string;
-    productsTitle: string;
-    productsDescription: string;
-    scenariosEyebrow: string;
-    scenariosTitle: string;
-    scenariosDescription: string;
-    scenarios: readonly (ContentItem & { productId: ProductId })[];
-    steps: readonly ContentItem[];
-    workflowTitle: string;
-    closingEyebrow: string;
+    familyEyebrow: string;
+    familyTitle: string;
+    familyLead: string;
+    examplesEyebrow: string;
+    examplesTitle: string;
+    examplesLead: string;
+    principlesEyebrow: string;
+    principlesTitle: string;
+    principles: readonly Principle[];
     closingTitle: string;
-    closingParts: readonly [string, string, string];
-    closingDescription: string;
-    closingCta: string;
-    seoTitle: string;
-    seoDescription: string;
+    closingLead: string;
   };
-  common: {
-    learnMore: string;
+  product: {
+    allProducts: string;
+    explore: string;
     download: string;
     downloadSoon: string;
-    viewDownloads: string;
-    illustration: string;
-    features: string;
-    workflow: string;
-    useCases: string;
-    faq: string;
-    downloads: string;
-    downloadsDescription: string;
-    backToProducts: string;
-    github: string;
-    external: string;
-    footerTagline: string;
-    rights: string;
-    allProducts: string;
-    modelNoticeTitle: string;
-    workflowEyebrow: string;
-    useCasesEyebrow: string;
-    getProductPrefix: string;
-    downloadArchitecture: string;
-    downloadVersion: string;
-    downloadChecksum: string;
-    notFoundTitle: string;
-    notFoundDescription: string;
-    backHome: string;
+    seeExamples: string;
+    comingSoon: string;
+    available: string;
+    chapters: string;
+    sections: {
+      overview: string;
+      features: string;
+      examples: string;
+      workflow: string;
+      privacy: string;
+      faq: string;
+      downloads: string;
+    };
+    featuresTitle: string;
+    requirements: string;
+    releaseNotes: string;
+    sourceCode: string;
+    related: string;
+    youAsk: string;
+    youGet: string;
   };
+  demo: { pause: string; illustrative: string };
+  notFound: { title: string; description: string; home: string };
+  footer: { tagline: string; productsNav: string; licenses: string; rights: string };
 }
 
-export const ui: Record<Locale, UI> = {
+export const ui: Localized<UiCopy> = {
   zh: {
+    meta: {
+      siteName: 'QCopilots',
+      description:
+        'QCopilots 系列产品：在 QGIS 中用日常语言完成地图工作，在本机文件中按记忆找到内容。',
+    },
     nav: {
+      skip: '跳到正文',
       products: '产品',
-      scenarios: '使用场景',
-      about: '关于',
-      download: '获取产品',
-      home: '首页',
-      menu: '打开导航',
-      close: '关闭导航',
-      skip: '跳到主要内容',
-      language: '切换语言',
+      menu: '打开菜单',
+      close: '关闭菜单',
+      language: '语言',
     },
     home: {
-      eyebrow: '让问题，成为探索的起点',
-      titleLines: ['用自然语言，', '探索你的数据。'],
-      description: '在地图中分析空间，在本机文件中寻找内容。',
-      heroAlt: '河流、城市道路与公园组成的地图示意',
-      heroPrompt: '找出这些社区附近的公园',
-      primaryCta: '探索产品',
+      seoTitle: 'QCopilots · 帮你处理地图与文件的 AI 助手',
+      eyebrow: 'QCopilots 系列',
+      title: ['用你自己的话，', '处理地图与文件。'],
+      lead: '在 QGIS 里描述想做的地图工作，或者用记得的内容找回电脑里的文件。QCopilots 在你自己的电脑上运行，每一步都清楚可见。',
+      primaryCta: '了解产品',
       secondaryCta: '看看能做什么',
-      productsEyebrow: '认识 QCopilots 系列',
-      productsTitle: '两款产品，不同的工作方式。',
-      productsDescription: '从空间数据到本机资料，选择适合你的探索方式。',
-      scenariosEyebrow: '从你的日常任务开始',
-      scenariosTitle: '一个问题，开启更多可能。',
-      scenariosDescription: '分析一张地图，找回一段内容。让工具从你熟悉的语言开始。',
-      scenarios: [
+      familyEyebrow: '产品',
+      familyTitle: '为不同的日常工作而设计',
+      familyLead: '每个 QCopilots 产品专注一件事，并把它做得清楚、可靠。',
+      examplesEyebrow: '使用示例',
+      examplesTitle: '用你自己的话来问',
+      examplesLead: '不需要记住菜单或命令。说出你想要的结果，或描述你记得的内容。',
+      principlesEyebrow: '我们的原则',
+      principlesTitle: '值得信赖的助手，应当如此',
+      principles: [
         {
-          title: '读懂一张地图',
-          description: '探索图层和数据，让空间关系逐渐清晰。',
-          productId: 'qcopilots',
+          icon: 'drive',
+          title: '在你的电脑上运行',
+          description: '默认使用本地模型与本地索引，你的项目和文件不需要离开这台电脑。',
         },
         {
-          title: '找回一份资料',
-          description: '用记得的内容，寻找报告与文档中的线索。',
-          productId: 'qcopilots-search',
+          icon: 'eye',
+          title: '每一步都看得见',
+          description:
+            'QCopilots 在对话里列出每一步，图层编辑由你决定是否保存。Search 只展示你自己的文件，从不编造答案。',
         },
         {
-          title: '回到某个时刻',
-          description: '从本机音频或视频中寻找相关片段。',
-          productId: 'qcopilots-search',
+          icon: 'translate',
+          title: '中文、英文都能用',
+          description:
+            '两款产品都可以用中文或英文提问。QCopilots Search 的界面支持中英文，还能跨语言找到内容。',
         },
       ],
-      workflowTitle: '从一个问题，走向一个结果。',
-      steps: [
-        { title: '选择你的任务', description: '分析一张地图，或寻找一份资料。' },
-        { title: '描述你想做的事', description: '用熟悉的语言，说出问题或线索。' },
-        { title: '查看结果，继续探索', description: '检查分析结果或预览匹配内容，再决定下一步。' },
-      ],
-      closingEyebrow: '你的下一步',
-      closingTitle: '找到适合你的 QCopilots。',
-      closingParts: ['找到适合你的 ', 'QCopilots', '。'],
-      closingDescription: '了解每款产品的工作方式，开始你的下一次探索。',
-      closingCta: '查看产品与下载',
-      seoTitle: 'QCopilots · 用自然语言，探索你的数据',
-      seoDescription:
-        '认识 QCopilots 和 QCopilots-Search。在 QGIS 中探索空间数据，用关键词或自然语言寻找本机文档、图片、音频与视频内容。',
+      closingTitle: '找到适合你工作的 QCopilots',
+      closingLead: '从一个具体的任务开始，看看它能为你省下多少步骤。',
     },
-    common: {
-      learnMore: '了解产品',
-      download: '前往下载',
-      downloadSoon: '下载入口稍后开放',
-      viewDownloads: '查看下载选项',
-      illustration: '界面示意 / Illustrative preview',
-      features: '你可以做什么',
-      workflow: '如何开始',
-      useCases: '使用场景',
-      faq: '常见问题',
-      downloads: '获取产品',
-      downloadsDescription: '选择适合你的产品，查看下载选项与使用要求。',
-      backToProducts: '查看全部产品',
-      github: 'GitHub',
-      external: '在外部网站打开',
-      footerTagline: '让问题，成为探索的起点。',
-      rights: 'QCopilots',
-      allProducts: '所有产品',
-      modelNoticeTitle: '按你的需要，选择工作方式',
-      workflowEyebrow: '简单的开始，清晰的下一步',
-      useCasesEyebrow: '从实际任务出发',
-      getProductPrefix: '获取',
-      downloadArchitecture: '架构',
-      downloadVersion: '版本',
-      downloadChecksum: '校验值',
-      notFoundTitle: '这条路径还没有内容。',
-      notFoundDescription: '页面可能已移动，或链接有误。从首页继续探索吧。',
-      backHome: '返回首页',
+    product: {
+      allProducts: '全部产品',
+      explore: '了解 {name}',
+      download: '下载',
+      downloadSoon: '即将开放下载',
+      seeExamples: '看看示例',
+      comingSoon: '即将推出',
+      available: '现已推出',
+      chapters: '页面章节',
+      sections: {
+        overview: '概览',
+        features: '功能',
+        examples: '示例',
+        workflow: '使用方式',
+        privacy: '隐私',
+        faq: '常见问题',
+        downloads: '下载',
+      },
+      featuresTitle: '它能为你做什么',
+      requirements: '系统要求',
+      releaseNotes: '查看全部发布版本',
+      sourceCode: '查看源代码',
+      related: '了解其他产品',
+      youAsk: '你这样说',
+      youGet: '它这样做',
+    },
+    demo: { pause: '暂停动画', illustrative: '界面示意' },
+    notFound: {
+      title: '没有找到这个页面',
+      description: '链接可能已经变更。可以从首页或产品页面继续浏览。',
+      home: '返回中文首页',
+    },
+    footer: {
+      tagline: '帮你处理地图与文件的 AI 助手。',
+      productsNav: '页脚产品链接',
+      licenses: '开源许可',
+      rights: '本站内容与界面示意仅用于产品介绍。',
     },
   },
   en: {
+    meta: {
+      siteName: 'QCopilots',
+      description:
+        'The QCopilots family: map work in plain language inside QGIS, and search that finds your files the way you remember them.',
+    },
     nav: {
-      products: 'Products',
-      scenarios: 'Use cases',
-      about: 'About',
-      download: 'Get QCopilots',
-      home: 'Home',
-      menu: 'Open navigation',
-      close: 'Close navigation',
       skip: 'Skip to content',
-      language: 'Change language',
+      products: 'Products',
+      menu: 'Open menu',
+      close: 'Close menu',
+      language: 'Language',
     },
     home: {
-      eyebrow: 'Let a question be your starting point',
-      titleLines: ['Explore your data.', 'In your own words.'],
-      description: 'Analyze spatial data on a map. Find content in your local files.',
-      heroAlt: 'An illustrated city map with a river, streets, and parks',
-      heroPrompt: 'Find parks near these neighborhoods',
-      primaryCta: 'Explore the products',
-      secondaryCta: 'See what you can do',
-      productsEyebrow: 'Meet the QCopilots family',
-      productsTitle: 'Two products. Different ways to work.',
-      productsDescription: 'From spatial data to local files, choose your way to explore.',
-      scenariosEyebrow: 'Start with your everyday work',
-      scenariosTitle: 'One question. More possibilities.',
-      scenariosDescription:
-        'Analyze a map or find a passage. Start with the words that come naturally to you.',
-      scenarios: [
+      seoTitle: 'QCopilots · Quiet help for your maps and files',
+      eyebrow: 'The QCopilots family',
+      title: ['Quiet help for', 'your maps and files.'],
+      lead: 'Describe the map work you want done in QGIS, or find a file on your computer by what you remember about it. QCopilots runs on your own computer and shows you every step.',
+      primaryCta: 'Meet the products',
+      secondaryCta: 'See what you can ask',
+      familyEyebrow: 'Products',
+      familyTitle: 'Made for the work you already do',
+      familyLead: 'Each QCopilots product focuses on one job and does it clearly and reliably.',
+      examplesEyebrow: 'Examples',
+      examplesTitle: 'Ask in your own words',
+      examplesLead:
+        'No menus or commands to remember. Say the result you want, or describe what you recall.',
+      principlesEyebrow: 'Principles',
+      principlesTitle: 'What a trustworthy assistant should be',
+      principles: [
         {
-          title: 'Make sense of a map',
-          description: 'Explore layers and data to understand relationships between places.',
-          productId: 'qcopilots',
+          icon: 'drive',
+          title: 'Runs on your computer',
+          description:
+            'Local models and local indexes by default, so your projects and files can stay on this machine.',
         },
         {
-          title: 'Find a document again',
-          description: 'Search for a clue you remember in reports and documents.',
-          productId: 'qcopilots-search',
+          icon: 'eye',
+          title: 'Every step in view',
+          description:
+            'QCopilots lists each step in the chat and holds layer edits until you save them. Search shows your own files and never makes up answers.',
         },
         {
-          title: 'Return to a moment',
-          description: 'Look for related clips in local audio and video files.',
-          productId: 'qcopilots-search',
-        },
-      ],
-      workflowTitle: 'From a question to a result.',
-      steps: [
-        {
-          title: 'Choose your task',
-          description: 'Analyze a map or find something in your files.',
-        },
-        {
-          title: 'Describe what you need',
-          description: 'Ask a question or share a clue in your own words.',
-        },
-        {
-          title: 'Review and explore further',
-          description: 'Check the analysis or preview a match, then decide what comes next.',
+          icon: 'translate',
+          title: 'Chinese or English',
+          description:
+            'Ask either product in Chinese or English. QCopilots Search also has a bilingual interface and finds content across the two languages.',
         },
       ],
-      closingEyebrow: 'Your next step',
-      closingTitle: 'Find your QCopilots.',
-      closingParts: ['Find your ', 'QCopilots', '.'],
-      closingDescription: 'Discover how each product works and begin your next exploration.',
-      closingCta: 'View products and downloads',
-      seoTitle: 'QCopilots · Explore your data in your own words',
-      seoDescription:
-        'Meet QCopilots and QCopilots-Search. Explore spatial data in QGIS and search local documents, images, audio, and video with keywords or natural language.',
+      closingTitle: 'Find the QCopilots that fits your work',
+      closingLead: 'Start with one real task and see how many steps it saves you.',
     },
-    common: {
-      learnMore: 'Explore the product',
-      download: 'Go to downloads',
-      downloadSoon: 'Download link coming soon',
-      viewDownloads: 'View download options',
-      illustration: 'Illustrative preview / 界面示意',
-      features: 'What you can do',
-      workflow: 'Getting started',
-      useCases: 'Use cases',
-      faq: 'Frequently asked questions',
-      downloads: 'Get the product',
-      downloadsDescription: 'Choose your product and review download options and requirements.',
-      backToProducts: 'Explore all products',
-      github: 'GitHub',
-      external: 'Opens an external website',
-      footerTagline: 'Let a question be your starting point.',
-      rights: 'QCopilots',
+    product: {
       allProducts: 'All products',
-      modelNoticeTitle: 'Choose how you work',
-      workflowEyebrow: 'A clear starting point',
-      useCasesEyebrow: 'Start with something real',
-      getProductPrefix: 'Get',
-      downloadArchitecture: 'Architecture',
-      downloadVersion: 'Version',
-      downloadChecksum: 'Checksum',
-      notFoundTitle: 'There is nothing at this address yet.',
-      notFoundDescription:
-        'The page may have moved or the link may be incorrect. Continue exploring from the home page.',
-      backHome: 'Back to home',
+      explore: 'Explore {name}',
+      download: 'Download',
+      downloadSoon: 'Download coming soon',
+      seeExamples: 'See examples',
+      comingSoon: 'Coming soon',
+      available: 'Available now',
+      chapters: 'Page chapters',
+      sections: {
+        overview: 'Overview',
+        features: 'Features',
+        examples: 'Examples',
+        workflow: 'How it works',
+        privacy: 'Privacy',
+        faq: 'FAQ',
+        downloads: 'Download',
+      },
+      featuresTitle: 'What it does for you',
+      requirements: 'Requirements',
+      releaseNotes: 'See all releases',
+      sourceCode: 'View the source code',
+      related: 'More from QCopilots',
+      youAsk: 'You say',
+      youGet: 'It does',
+    },
+    demo: { pause: 'Pause animation', illustrative: 'Illustrative preview' },
+    notFound: {
+      title: 'This page could not be found',
+      description: 'The link may have changed. Continue from the home page or a product page.',
+      home: 'English home',
+    },
+    footer: {
+      tagline: 'Quiet help for your maps and files.',
+      productsNav: 'Footer products',
+      licenses: 'Open-source licenses',
+      rights: 'Product previews on this site are illustrations.',
     },
   },
 };

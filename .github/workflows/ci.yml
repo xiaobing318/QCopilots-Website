@@ -47,6 +47,10 @@ jobs:
       - name: Set up through the Bash entrypoint
         if: runner.os != 'Windows'
         run: bash scripts/site.sh setup
+      - name: Run unit tests through the cmd.exe entrypoint
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: scripts\site.cmd run test
       - run: npm run format:check
       - run: npm run lint
       - run: npm run check
