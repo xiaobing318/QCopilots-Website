@@ -509,14 +509,20 @@ test('pages load only first-party resources, including self-hosted fonts', async
   const errors = collectConsoleErrors(page);
   const requests = collectRequests(page, origin);
   for (const route of [...routes, notFoundRoute]) {
-    const fontsBefore = requests.fonts.length;
     await page.goto(route);
-    await page.evaluate(() => document.fonts.ready);
-    expect(
-      requests.fonts.length - fontsBefore,
-      `${route} loaded no self-hosted woff2 font`,
-    ).toBeGreaterThan(0);
+    // Count faces the page actually uses. Browsers may reuse cached files, so requests alone vary.
+    const loadedFaces = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return [...document.fonts]
+        .filter((face) => face.status === 'loaded')
+        .map((face) => face.family);
+    });
+    expect(loadedFaces.length, `${route} rendered without the self-hosted fonts`).toBeGreaterThan(
+      0,
+    );
   }
+  // Fonts arrive as woff2 from the site itself, never from a CDN.
+  expect(requests.fonts.length, 'no self-hosted woff2 font was requested').toBeGreaterThan(0);
   expect(requests.thirdParty).toEqual([]);
   expect(requests.failed.filter((failure) => !failure.includes(notFoundRoute))).toEqual([]);
   expect(withoutExpected404(errors)).toEqual([]);
