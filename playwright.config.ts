@@ -40,6 +40,8 @@ export default defineConfig({
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['junit', { outputFile: 'test-results/e2e.xml' }],
+    // On GitHub Actions each failure also appears as a public annotation on the run summary.
+    ...(process.env.GITHUB_ACTIONS ? [['github'] as const] : []),
   ],
   outputDir: 'test-results/browser',
   use: {

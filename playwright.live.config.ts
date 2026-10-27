@@ -17,6 +17,7 @@ export default defineConfig({
     ['list'],
     ['html', { outputFolder: 'playwright-report/live', open: 'never' }],
     ['junit', { outputFile: 'test-results/live.xml' }],
+    ...(process.env.GITHUB_ACTIONS ? [['github'] as const] : []),
   ],
   outputDir: 'test-results/live',
   use: {
