@@ -8,11 +8,22 @@ updates:
     groups:
       development-tools:
         dependency-type: development
+    ignore:
+      # Node.js stays on the pinned 24 line, so its type definitions must match it.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # astro check and typescript-eslint do not support the TypeScript 7 native compiler yet.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      # The Pages actions must move together, so one pull request covers every action.
+      github-actions:
+        patterns: ['*']
   - package-ecosystem: docker
     directory: /
     schedule:

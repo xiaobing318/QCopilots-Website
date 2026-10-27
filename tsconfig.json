@@ -1,5 +1,12 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "src/**/*", "playwright.config.ts", "tests/e2e/**/*"],
+  "include": [
+    ".astro/types.d.ts",
+    "src/**/*",
+    "playwright.config.ts",
+    "playwright.live.config.ts",
+    "tests/e2e/**/*",
+    "tests/live/**/*"
+  ],
   "exclude": ["dist"]
 }

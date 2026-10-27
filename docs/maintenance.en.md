@@ -79,7 +79,7 @@ Install browser dependencies separately with `npx playwright install`. Linux CI 
 
 `.github/workflows/ci.yml` runs quality, native lifecycle, and packaging checks on Windows, Linux, and macOS, with three browsers, root and project paths, and container deployment on Linux. `dependency-audit.yml` adds scheduled dependency checks. Review failure reports, screenshots, and logs instead of repeatedly changing the lockfile.
 
-Pages requires `PAGES_ENABLED=true` or a manual main-branch run with publishing selected. The publishing job rebuilds and validates using the actual address and path returned by Pages. Pull requests receive no publishing permissions.
+Pages publishes on every green push to `main` unless the repository variable `PAGES_ENABLED` is `false`. A manual main-branch run with publishing selected also works. The publishing job rebuilds and validates using the actual address and path returned by Pages. After deployment `npm run test:live` visits the live site like a user. Pull requests receive no publishing permissions.
 
 Record automation and real-device testing separately. A hosted runner does not prove Windows 10 / 11 clients, every Linux distribution, GPUs, or every Mac have passed. Service registration and reboot behavior need a target machine or dedicated VM. Website tests do not prove the desktop products’ runtime behavior.
 

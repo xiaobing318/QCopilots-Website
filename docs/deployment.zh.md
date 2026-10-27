@@ -142,7 +142,7 @@ bash scripts/site.sh stop --target compose --config config/deploy.json
 ## GitHub Pages
 
 1. 在仓库 Settings → Pages 中选择 GitHub Actions 作为来源。
-2. 添加仓库变量 `PAGES_ENABLED=true`，允许主分支检查通过后自动发布。也可从工作流手动选择发布。
+2. 每次推送到 `main` 且全部检查通过后会自动发布。随后 `pages-smoke` 任务等待新版本上线，并以桌面和手机两种方式访问每个页面。如需暂停发布，把仓库变量 `PAGES_ENABLED` 设为 `false`。也可手动运行工作流并选择 publish 发布。
 3. 项目站点使用 `/QCopilots-Website/`，通过 Pages 部署任务配置正确的站点地址与路径。
 4. 若改为自定义域名，同步调整构建地址、路径和 Pages 设置，并配置 DNS。仅提交 `CNAME` 不会完成域名配置。
 

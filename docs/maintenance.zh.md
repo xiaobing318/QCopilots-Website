@@ -79,7 +79,7 @@ Windows 使用 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\si
 
 `.github/workflows/ci.yml` 负责 Windows、Linux、macOS 的质量检查、原生生命周期和归档，Linux 上覆盖三种浏览器、根路径与项目子路径及容器部署。`dependency-audit.yml` 提供周期性依赖检查。失败时查看 Actions 报告、失败截图和日志，而不是重复修改锁文件。
 
-Pages 默认需要 `PAGES_ENABLED=true`，或在主分支手动触发并选择发布。发布任务依据 Pages 返回的真实域名与路径重新构建和验证。Pull request 不获得发布权限。
+推送到 `main` 且检查全部通过后 Pages 会自动发布，除非仓库变量 `PAGES_ENABLED` 为 `false`。也可在主分支手动触发并选择发布。发布任务依据 Pages 返回的真实域名与路径重新构建和验证。部署完成后 `npm run test:live` 会像真实用户一样访问线上站点。Pull request 不获得发布权限。
 
 自动化验证与真机验证分开记录。普通 hosted runner 不证明 Windows 10 / 11 客户端、所有 Linux 发行版、GPU 或每款 Mac 都已通过测试。服务注册和重启后自启行为需目标机器或专用虚拟机验收。产品运行能力也不能仅凭官网构建测试认定通过。
 

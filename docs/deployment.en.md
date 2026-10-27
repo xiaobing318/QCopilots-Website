@@ -142,7 +142,7 @@ Each deployment builds an independent local image from the static output. A succ
 ## GitHub Pages
 
 1. Select GitHub Actions as the source under repository Settings → Pages.
-2. Set the repository variable `PAGES_ENABLED=true` to publish after successful main-branch checks. Publishing can also be selected when manually running the workflow.
+2. Every push to `main` publishes after all checks pass. A `pages-smoke` job then waits for the new build and visits every page on desktop and mobile. To pause publishing, set the repository variable `PAGES_ENABLED=false`. A manual workflow run with "publish" selected also deploys.
 3. A project site uses `/QCopilots-Website/`. The Pages job must build with the correct address and project path.
 4. For a custom domain, update the build address, path, Pages settings, and DNS together. A `CNAME` file alone does not configure DNS.
 

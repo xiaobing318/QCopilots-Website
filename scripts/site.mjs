@@ -12,17 +12,36 @@ import {
   portAvailable,
 } from './runtime/native.mjs';
 
-const help = `QCopilots Website\n\n  setup | doctor | dev | check | build | package\n  deploy native|compose [--config config/deploy.json]\n  start|stop|status|rollback [--target native|compose] [--config path]\n  service install|uninstall [--dry-run] [--scope user|system] [--user NAME]\n\nNative overrides: --source dist --runtime-dir path --host 127.0.0.1\n                  --port 8080 --admin-port 20199 --base-path /\n\nUse scripts/site.ps1 or bash scripts/site.sh to bootstrap pinned Node.js.\nNative deploy uses the existing build. Run build first.\nService scope defaults to user on Linux/macOS and system on Windows.\n`;
+const help = `QCopilots Website\n\n  setup | doctor | dev | check | build | package\n  run <npm-script> [args]       e.g. run test:e2e, run lint, run test:live\n  browsers [chromium|firefox|webkit|all] [--with-deps]   (Linux system packages need --with-deps)\n  deploy native|compose [--config config/deploy.json]\n  start|stop|status|rollback [--target native|compose] [--config path]\n  service install|uninstall [--dry-run] [--scope user|system] [--user NAME]\n\nNative overrides: --source dist --runtime-dir path --host 127.0.0.1\n                  --port 8080 --admin-port 20199 --base-path /\n\nUse scripts/site.ps1 or bash scripts/site.sh to bootstrap pinned Node.js.\nNative deploy uses the existing build. Run build first.\nService scope defaults to user on Linux/macOS and system on Windows.\n`;
 
 async function main() {
   const args = process.argv.slice(2);
   const first = args[0] ?? 'help';
-  if (['setup', 'dev', 'check', 'build', 'package'].includes(first)) {
+  if (['setup', 'dev', 'check', 'build', 'package', 'run', 'browsers'].includes(first)) {
     if (process.versions.node !== toolchain.nodeVersion)
       throw new Error(
         `Node ${toolchain.nodeVersion} is required. Use scripts/site.ps1 or bash scripts/site.sh.`,
       );
-    if (first === 'package')
+    if (first === 'run') {
+      const [script, ...rest] = args.slice(1);
+      if (!script) throw new Error('Name an npm script, for example: run test:e2e');
+      // Windows PowerShell drops a literal "--", so restore it before forwarding arguments.
+      const forwarded = rest.filter((value) => value !== '--');
+      await npmCommand(['run', script, ...(forwarded.length ? ['--', ...forwarded] : [])]);
+    } else if (first === 'browsers') {
+      const flags = args.slice(1).filter((value) => value.startsWith('--') && value !== '--');
+      const names = args.slice(1).filter((value) => !value.startsWith('--'));
+      const install = names.includes('all') ? ['chromium', 'firefox', 'webkit'] : names;
+      await npmCommand([
+        'exec',
+        '--no',
+        '--',
+        'playwright',
+        'install',
+        ...flags,
+        ...(install.length ? install : ['chromium']),
+      ]);
+    } else if (first === 'package')
       await run(process.execPath, [path.join(root, 'scripts/package.mjs'), ...args.slice(1)]);
     else
       await npmCommand(
