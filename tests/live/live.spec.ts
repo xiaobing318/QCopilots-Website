@@ -85,7 +85,10 @@ test('switching language keeps the product and chapter', async ({ page, request,
   expect(products.length).toBeGreaterThan(0);
   for (const path of products) {
     const english = path.replace(/^zh\//, 'en/');
-    await page.goto(`${path}#faq`);
+    // A clear status message beats a click timeout if Pages briefly serves something else.
+    const response = await page.goto(`${path}#faq`);
+    expect(response?.status(), path).toBe(200);
+    await expect(page.locator('#faq')).toBeInViewport();
     await page.getByTestId('language-switch').click();
     await expect(page).toHaveURL(new RegExp(`/${english}#faq$`));
     await expect(page.locator('#faq')).toBeInViewport();

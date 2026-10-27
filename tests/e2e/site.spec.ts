@@ -583,6 +583,16 @@ test('Tab navigation exposes visible focus in document order', async ({ page, br
   }
 });
 
+test('links to a chapter land on it with motion allowed, in both languages', async ({ page }) => {
+  // Regression: smooth scrolling during load used to leave visitors at the top of the page.
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  for (const locale of locales)
+    for (const product of products) {
+      await page.goto(`${locale}/products/${product.id}/?from=share#downloads`);
+      await expect(page.locator('#downloads')).toBeInViewport();
+    }
+});
+
 test('reduced-motion preference disables continuous motion and smooth scrolling', async ({
   page,
 }) => {

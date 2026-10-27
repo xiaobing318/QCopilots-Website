@@ -22,8 +22,12 @@ html {
   scroll-padding-top: calc(var(--header-height) + 16px);
 }
 
+/*
+ * Smooth scrolling starts only after the page has loaded (class set in SiteLayout).
+ * A link to a chapter such as #faq then lands instantly, even while fonts and demos settle.
+ */
 @media (prefers-reduced-motion: no-preference) {
-  html {
+  html.smooth-scroll {
     scroll-behavior: smooth;
   }
 }

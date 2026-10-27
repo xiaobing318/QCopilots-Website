@@ -62,8 +62,14 @@ const canonical = canonicalUrl(route(locale, slug), siteUrl);
       // Mark script support before first paint so the phone menu does not flash open.
       document.documentElement.classList.add('js');
       // Gentle motion is opt-in: content is complete without it.
-      if (matchMedia('(prefers-reduced-motion: no-preference)').matches)
+      if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
         document.documentElement.classList.add('motion-ok');
+        addEventListener(
+          'load',
+          () => setTimeout(() => document.documentElement.classList.add('smooth-scroll'), 500),
+          { once: true },
+        );
+      }
     </script>
   </head>
   <body>
