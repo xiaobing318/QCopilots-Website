@@ -8,15 +8,17 @@ This guide is for the people who keep the website up to date. No front-end exper
 
 All text and product data live in `src/content/`. Page components only handle layout. Routine maintenance rarely touches anything else.
 
-| File                           | Purpose                                                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `src/content/types.ts`         | Field definitions for all content. Think of it as the schema                                                 |
-| `src/content/products.ts`      | Product registry. Imports each product file and sorts them by `order`, smallest first                        |
-| `src/content/products/<id>.ts` | Everything about one product: copy in both languages, theme colours, status, icon, demo, links and downloads |
-| `src/content/ui.ts`            | Shared copy: navigation, home page, product page labels, footer                                              |
-| `src/content/icons.ts`         | Icon names that content may use. Each maps to an icon in `src/components/Icon.astro`                         |
-| `src/content/demos.ts`         | Demo keys. Each maps to a component in `src/components/demos/registry.ts`                                    |
-| `docs/product-evidence.md`     | Product facts behind the website copy                                                                        |
+| File                           | Purpose                                                                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/content/types.ts`         | Field definitions for all content. Think of it as the schema                                                                                                              |
+| `src/content/products.ts`      | Product registry. Imports each product file and sorts them by `order`, smallest first                                                                                     |
+| `src/content/products/<id>.ts` | Everything about one product: copy in both languages, theme colours, status, icon, demo, links and downloads                                                              |
+| `src/content/ui.ts`            | Shared copy: navigation, home page, ways to work with us, product page labels, footer                                                                                     |
+| `src/content/site.ts`          | Untranslated publisher facts in `organization`: company name, copyright year and contact email. See [Contact details and company name](#contact-details-and-company-name) |
+| `src/content/icons.ts`         | Icon names that content may use. Each maps to an icon in `src/components/Icon.astro`                                                                                      |
+| `src/content/demos.ts`         | Demo keys. Each maps to a component in `src/components/demos/registry.ts`                                                                                                 |
+| `src/assets/real-runs/`        | Screenshots for the “A real run” block on product pages. See [Real runs and screenshots](#real-runs-and-screenshots)                                                      |
+| `docs/product-evidence.md`     | Product facts and real-run records behind the website copy                                                                                                                |
 
 Main fields of a product file:
 
@@ -32,7 +34,7 @@ Main fields of a product file:
 | `locales.zh` / `locales.en` | All copy in each language                                                                                                                             |
 | `downloads`                 | Download entries, at least one                                                                                                                        |
 
-`locales` holds the name, category, tagline, summary, SEO text, home card, highlights, examples, optional `facts`, steps, privacy notes, requirements, FAQ, download text and the demo text. The comments in `types.ts` explain each field.
+`locales` holds the name, category, tagline, summary, SEO text, home card, highlights, examples, optional `facts`, steps, privacy notes, requirements, FAQ, download text, the demo text `demo` and an optional real-run record `realRun`. The comments in `types.ts` explain each field. For `demo` and `realRun` in detail, see [Product demos](#product-demos) and [Real runs and screenshots](#real-runs-and-screenshots).
 
 ## Editing copy safely
 
@@ -43,11 +45,12 @@ If you are not sure where a piece of text lives, search for it in `src/content/`
 3. **No Chinese in English copy.** The English side must not contain Chinese characters or full-width punctuation such as `，。：；（）、！？「」『』`.
 4. **Write Chinese the Chinese way.** Use full-width punctuation. Put a half-width space between Chinese and Latin words or numbers, as in “不到 1 GB 的模型”.
 5. **Write English the English way.** Keep the meaning, not the word order.
-6. **Keep placeholders.** In `ui.ts`, `'Explore {name}'` has `{name}` replaced by the product name. Keep it in both languages.
-7. **No unused keys in `ui.ts`.** When a page stops using a string, delete it from `ui.ts`. Otherwise `site check` reports `is not used`.
-8. **Only use icon names from `icons.ts`.** For a new icon, see [Adding an icon](#adding-an-icon).
-9. **Back product facts with evidence.** When a version, format or requirement changes, update the [product evidence record](product-evidence.md) too.
-10. **Check narrow screens.** Preview with `site dev`, shrink the browser window to phone width and check line breaks in both languages.
+6. **Write for everyday users.** Product copy and `ui.ts` must not contain technical details users cannot be expected to understand: web addresses, IP addresses, ports, `localhost`, model engine names (such as llama), tokens and keys, or local paths (such as `C:\Users` or `AppData`). When explaining how the model connects, say only what a user can follow, for example: the model can run on a server, a workstation or your own computer, and you connect it from the “QCopilots” menu in QGIS with “Configure QCopilots URL”. Download and source links belong in `downloads` and `links`, never in the text. `site check` scans all copy in the product files (including `demo` and `realRun`) and `ui.ts`. `site run test:built` then scans the text, `alt` and similar attributes and the share descriptions of every page except the licenses page. Technical details go in the [product evidence record](product-evidence.md).
+7. **Keep placeholders.** In `ui.ts`, `'Explore {name}'` has `{name}` replaced by the product name. Keep it in both languages. The other placeholders are `{year}` and `{company}` in `footer.copyright`, `{name}` in `product.trialSubject` and `{date}` in `product.realRecorded`.
+8. **No unused keys in `ui.ts`.** When a page stops using a string, delete it from `ui.ts`. Otherwise `site check` reports `is not used`.
+9. **Only use icon names from `icons.ts`.** For a new icon, see [Adding an icon](#adding-an-icon).
+10. **Back product facts with evidence.** When a version, format or requirement changes, update the [product evidence record](product-evidence.md) too.
+11. **Check narrow screens.** Preview with `site dev`, shrink the browser window to phone width and check line breaks in both languages.
 
 The home headline is `home.title` in `ui.ts`, in two parts. After changing it or `home.eyebrow`, [regenerate the share images](#social-preview-images).
 
@@ -79,6 +82,35 @@ A `coming-soon` product cannot have download URLs. The check blocks it. A `null`
 
 Do not substitute the upstream QGIS download page for QCopilots packages, and do not infer QCopilots compatibility from QGIS platforms. QCopilots Search links to its latest GitHub release page, `releases/latest`, so the site never breaks when file names change.
 
+Below the download cards of a `coming-soon` product, the page adds the line “Want to try it before release? Request early access”. The link opens the visitor's mail app with a message to the contact address and the subject “Early access to {product name}”. It sits outside the cards and disappears once the product is `available`. Its text is `product.trialPrompt`, `trialCta` and `trialSubject` in `ui.ts`.
+
+## Contact details and company name
+
+The contact email, company name and copyright year live only in `organization` in `src/content/site.ts`. They are not translated:
+
+```ts
+export const organization = {
+  name: '北京星球时空智能科技有限公司', // company name
+  nameLang: 'zh-CN', // language of the company name
+  copyrightYear: 2026, // copyright year
+  email: 'xiaobinghere@gmail.com', // contact email
+} as const;
+```
+
+Where they appear:
+
+| Place                                  | What it shows                                                                           | Copy in `ui.ts`                                                                          |
+| -------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| The “Work with us” section, `#contact` | Four ways to work together, an “Email us” button and the full address                   | `contact`: `eyebrow`, `title`, `lead`, `types`, `emailCta`, `emailLabel`, `emailSubject` |
+| The footer of every page               | A “Contact” column with the email and a link to the home `#contact`. The copyright line | `contact.footerHeading`, `contact.footerLink`, `footer.copyright`                        |
+| Downloads of a coming-soon product     | The “Request early access” email link                                                   | `product.trialPrompt`, `trialCta`, `trialSubject`                                        |
+
+- **Changing the email**: change `email` only. The button, footer and early access link all follow. `site check` validates the address, and the build check requires every `mailto:` link on the site to use it, so never write an address anywhere else.
+- **Changing the company name**: change `name` only. The copyright line is `footer.copyright` in `ui.ts`: `'© {year} {company} 版权所有'` in Chinese and `'© {year} {company}. All rights reserved.'` in English. On English pages the company name stays in Chinese inside a `lang="zh-CN"` element. To switch to an English name, also change `nameLang` and the copyright check in `scripts/verify-build.mjs`, which expects the company name to carry a Chinese language tag.
+- **Changing the year**: change `copyrightYear`.
+- **Changing the ways to work together**: edit each entry of `contact.types` in `ui.ts` (`icon`, `title`, `description`), with the same number of entries in both languages. Icon names must come from `icons.ts`. You can add or remove entries. The checks count them from the content.
+- **Email subjects**: `contact.emailSubject` and `product.trialSubject` are encoded into the links, so spaces never turn into plus signs.
+
 ## Adding a product
 
 Using `QCopilots-xxx` as the example:
@@ -91,9 +123,10 @@ Using `QCopilots-xxx` as the example:
 3. **Add the icon.** Put the file in `public/images/`, for example `public/images/xxx-icon.svg`. Set `icon: { src: '/images/xxx-icon.svg', width: …, height: … }` with the image's natural size. Record its origin and license in [Assets](assets.md).
 4. **Choose theme colours.** Fill in the three `theme` colours. See [Theme colours and contrast](#theme-colours-and-contrast).
 5. **Write both languages.** Rewrite everything in `locales.zh` and `locales.en`. Highlight `icon` values must come from `icons.ts`.
-6. **Demo.** Without a dedicated demo, delete the `demo` line. The page then uses `GenericDemo` automatically, with text from `locales.*.demo`. For a dedicated demo, see [Product demos](#product-demos).
-7. **Downloads and links.** Fill in `downloads`, at least one entry. With `coming-soon`, every `url` is `null`. `links` is optional and must use HTTPS.
-8. **Register the product** in `src/content/products.ts`:
+6. **Demo (a dedicated one is optional).** Without a dedicated demo, delete the `demo` line. The page then uses `GenericDemo` automatically, with text from `locales.*.demo`. For a dedicated demo, see [Product demos](#product-demos).
+7. **Downloads and links.** Fill in `downloads`, at least one entry. With `coming-soon`, every `url` is `null`, and the “Request early access” link appears below the downloads automatically. `links` is optional and must use HTTPS.
+8. **Real run (optional).** If the copied file has a `realRun`, delete it first. Once you have a recorded run, add `realRun` in both languages and put the screenshots in `src/assets/real-runs/qcopilots-xxx/`. See [Real runs and screenshots](#real-runs-and-screenshots). Without `realRun`, the page shows no such block.
+9. **Register the product** in `src/content/products.ts`:
 
    ```ts
    import qcopilotsXxx from './products/qcopilots-xxx.ts';
@@ -103,14 +136,15 @@ Using `QCopilots-xxx` as the example:
    );
    ```
 
-9. **Update the family copy.** The home headline, `meta.description` in `src/content/ui.ts` and the OG images describe the whole family ("maps and files"). If the new product changes that story, update both languages and run `site run render:og`.
-10. **Run the checks** in the order given in [Checks before publishing](#checks-before-publishing).
+10. **Update the family copy.** The home headline, `meta.description` in `src/content/ui.ts` and the OG images describe the whole family ("maps and files"). If the new product changes that story, update both languages and run `site run render:og`.
+11. **Run the checks** in the order given in [Checks before publishing](#checks-before-publishing).
 
 The new product then appears automatically in:
 
 - Its pages in both languages, `/zh/products/qcopilots-xxx/` and `/en/products/qcopilots-xxx/`
 - The header, footer, home page product cards and examples
 - The “More from QCopilots” section at the bottom of product pages
+- The “Request early access” link below the downloads while it is `coming-soon`
 - The sitemap, `sitemap.xml`
 - The content checks, build checks and browser tests
 
@@ -122,7 +156,19 @@ The new product then appears automatically in:
 
 ## Product demos
 
-The “windows” on product pages and home cards are illustrations drawn with HTML, CSS and SVG, not screenshots. They carry an “Illustrative preview / 界面示意” label, and their text follows the page language.
+The “windows” on product pages and home cards are illustrations drawn with HTML, CSS and SVG, not screenshots. They carry an “Illustrative preview / 界面示意” label, and their text follows the page language. Real screenshots go in the separate “A real run” block. See [Real runs and screenshots](#real-runs-and-screenshots).
+
+Demo text lives in `locales.*.demo` in the product file. `caption` is the text under the demo, `windowTitle` and `placeholder` are the window title and the input hint, `labels` holds small pieces such as button and layer names, and `scenes` are the moments that play in turn. Each scene has a `query` (what the user asks) plus any of these:
+
+| Field     | Meaning                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------ |
+| `steps`   | Steps the product takes, appearing one by one                                              |
+| `reply`   | The product's answer                                                                       |
+| `results` | A result list, such as the files Search finds                                              |
+| `rows`    | A small table with a `label` and `value` per row, such as QCopilots' “five largest states” |
+| `total`   | The real number of results when the demo draws only the first few                          |
+
+Take numbers in demos from real tests where possible, and keep them in line with the [product evidence](product-evidence.md).
 
 To add a dedicated demo:
 
@@ -143,6 +189,94 @@ The demo contract (also written in a comment in `DemoFrame.astro`):
 - **No product names in class names.** The build check rejects selectors like `.search-…` or ones named after a product `id`. Use a short neutral prefix.
 
 Playback lives in `demo-motion.ts`. While a demo is on screen it moves to the next scene every 9 seconds. Visitors can pause it with the button next to the caption. With “reduce motion” turned on in the operating system, nothing plays and the pause button is hidden.
+
+### The map in the QCopilots demo
+
+The QCopilots demo draws a thematic map of the area of Germany's 16 federal states. Its three scenes shade and label the states by area, lay them out on an A4 page, and list the five largest. The map data comes from `world_map.gpkg`, which ships with QGIS (Natural Earth, public domain). `scripts/demo-geometry.mjs` runs QGIS processing tools on it and writes `src/components/demos/geometry/germany-states.ts`. Never edit that file by hand. Regenerate it instead.
+
+You need a QGIS 3.36 or later install or package that includes `qgis_process`. From the repository root, run the script with the Node that `site setup` downloaded (a Windows cmd example, with `<QGIS>` replaced by the QGIS folder):
+
+```bat
+.tools\node-v24.22.1-win-x64\node.exe scripts\demo-geometry.mjs ^
+  --qgis-process "<QGIS>\bin\qgis_process-qgis-qt6.bat" ^
+  --data "<QGIS>\apps\qgis-qt6\resources\data\world_map.gpkg" ^
+  --admin Germany --out src/components/demos/geometry/germany-states.ts
+```
+
+Useful options: `--admin` picks the country, `--classes` the number of classes (default 5), `--mode` either `equal` (equal interval, matching the real run, the default), `quantile` (equal count) or `jenks` (natural breaks), `--crs` the equal-area projection used for areas (default EPSG:3035) and `--tolerance` the amount of simplification (default 4000 metres). The comment at the top of the script lists every option. `world_map.gpkg` is only read, never changed.
+
+After regenerating, check that this `demo` text still matches, in both languages:
+
+- `labels.class1` to `labels.class5`: the area ranges in the legend, matching `breaks` in the generated file
+- `rows` and `reply` in the third scene: the five largest states and their areas, in the order of `areas` in the generated file
+- For another country: `caption`, `windowTitle`, `labels.layerResult`, `labels.mapTitle`, `labels.tableTitle` and the text of each scene
+- `labels.scaleBar` is the real distance the scale bar stands for, such as `100 km`. The bar's length is computed from it
+
+The data source is recorded in [Assets](assets.md).
+
+## Real runs and screenshots
+
+Each language of a product file may have an optional `realRun`. It appears as the “A real run / 一次真实运行” block below the examples in the product page's examples chapter (`#use-cases`). It adds no chapter to the sub-navigation. The block carries a “Real screenshots / 真实截图” label. On wide screens the prompts, steps, numbers and notes sit on the left and the screenshots on the right. On narrow screens they stack. The first screenshot is shown large and the rest two to a row. Each one opens the full-size image.
+
+| Field        | Meaning                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `title`      | Block heading                                                                            |
+| `intro`      | A sentence or two: the task and the data used                                            |
+| `prompts`    | Exactly what was typed, in order                                                         |
+| `steps`      | What the product did, summarised from the run                                            |
+| `facts`      | Real numbers from this run, shaped like `facts.items`                                    |
+| `images`     | Screenshots, each with `file` (relative to `src/assets/real-runs/`), `alt` and `caption` |
+| `version`    | Product build and system used for the run                                                |
+| `recordedOn` | Recording date as `YYYY-MM-DD`, identical in both languages                              |
+| `note`       | Data source, where the model ran, and how the screenshots were edited                    |
+
+`realRun` must exist in both languages or in neither. Its text follows the [write for everyday users](#editing-copy-safely) rule too. Keep server addresses out of `note` and write something like “the model ran on another computer on the same network”.
+
+### Recording a run
+
+1. Use a released or packaged build. Note its version, commit and system for `version`.
+2. Use only public material or samples made for the test, never private or customer data. Note the source and license of every sample file that appears on screen.
+3. Ideally record once per language, typing in that language, so the screenshots match one to one in number, order and content. When the run was recorded only once, the other language shares its screenshots. Its `prompts` are translations, with no “translated” label, and its `alt` text and captions are translated too.
+4. Write down exactly what you typed, what the product did and the numbers it produced. Never add steps that did not happen.
+5. Capture only the relevant window, ideally at least 1280 pixels wide. Use PNG for interface screenshots.
+
+### Privacy check before committing
+
+Check every image and make sure it shows none of these:
+
+- Real names, user names, computer names, email addresses or phone numbers
+- User folders and local paths, such as `C:\Users\…` or `AppData`
+- Server addresses, tunnel addresses, ports, keys or tokens
+- Notifications, chat windows, the taskbar or other unrelated windows
+- Private or customer file names, project names and data
+
+Publish screenshots as captured, at full resolution. Crop or mask only when private details must be removed, and never change the result of the run. Describe any edits in `realRun.note`. Re-export the images to drop metadata.
+
+### File names
+
+```text
+src/assets/real-runs/<product-id>/<locale>-<n>-<name>.png
+```
+
+For example `src/assets/real-runs/qcopilots-search/zh-1-pdf.png` and `src/assets/real-runs/qcopilots-search/en-1-pdf.png`. PNG or JPG only (lowercase extension), never WebP. Both languages have the same number of images in the same order, and `<n>` follows the order in `realRun.images`.
+
+When a run was recorded in one language only, both languages share one set of screenshots, named without the locale prefix:
+
+```text
+src/assets/real-runs/<product-id>/<n>-<name>.png
+```
+
+For example QCopilots' `qcopilots/1-map.png`, referenced from `realRun.images` on both sides. The full rules are in `src/assets/real-runs/README.md`.
+
+At build time Astro generates 640 and 1280 pixel wide AVIF and original-format versions, and keeps the original for the “Open full size” link. There is no need to compress or convert images yourself.
+
+### Records and checks
+
+- Register every screenshot in [Assets](assets.md#real-screenshot-register): file, product version, recording date, source and privacy check.
+- Record the run and every number and claim in `realRun` in the [product evidence](product-evidence.md).
+- `site check` validates the date format, that both languages share the date, and that each file exists and is PNG or JPG.
+- `site run test:built` checks that the block sits inside `#use-cases`, the label, the number of prompts and steps, `alt` text and captions, that images come from Astro, and that each full-size link works.
+- `site run test:e2e` confirms in a browser that every screenshot loads and its full-size link opens.
 
 ## Theme colours and contrast
 
@@ -200,17 +334,18 @@ Before pushing to `main`, run in this order:
 7. `site browsers chromium`: first time only
 8. `site run test:e2e`: browser and accessibility tests
 9. If the home headline changed, run `site run render:og` and commit the new images
-10. Walk through the list in the [design reference](../design-qa.md#visual-qa-checklist) with `site dev`
+10. If real screenshots were added or replaced, go through the [privacy check](#privacy-check-before-committing) for each one and update [Assets](assets.md#real-screenshot-register) and the [product evidence](product-evidence.md)
+11. Walk through the list in the [design reference](../design-qa.md#visual-qa-checklist) with `site dev`
 
 What each check catches:
 
-| Command               | What it checks                                                                                                                                                                                                                    |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `site check`          | Astro types. `scripts/check-content.mjs`: zh/en structure match, no Chinese in English copy, theme contrast, valid demo keys and icon names, no download URLs on `coming-soon` products, HTTPS links, no unused `ui.ts` keys      |
-| `site run test`       | Unit tests for the URL and path helpers                                                                                                                                                                                           |
-| `site run test:built` | `scripts/verify-build.mjs`: every link and file exists, bilingual SEO and sitemap, no Chinese on English pages outside `lang="zh-CN"` elements, download states, demo structure, share image size, no product-named CSS selectors |
-| `site run test:e2e`   | Playwright browser tests (`tests/e2e`): navigation, language switching, FAQ, keyboard focus, mobile layout, reduced motion, use without JavaScript, and axe accessibility checks                                                  |
-| `site run test:live`  | Visits every page of the live site. See [Development and deployment](deployment.en.md#checking-the-live-build)                                                                                                                    |
+| Command               | What it checks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `site check`          | Astro types. `scripts/check-content.mjs`: zh/en structure match, no Chinese in English copy, no addresses, ports, keys or similar technical terms in copy, theme contrast, valid demo keys and icon names (contact icons included), `realRun` dates and screenshot files, the contact email format, no download URLs on `coming-soon` products, HTTPS links, no unused `ui.ts` keys                                                                                                                 |
+| `site run test`       | Unit tests for the URL and path helpers                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `site run test:built` | `scripts/verify-build.mjs`: every link and file exists, every candidate of a responsive image is published, bilingual SEO and sitemap, no Chinese on English pages outside `lang="zh-CN"` elements, no technical terms on pages, every `mailto:` uses the email in `site.ts`, the footer email, contact link and copyright on every page, the home contact section, download states and the early access link, the real-run block, demo structure, share image size, no product-named CSS selectors |
+| `site run test:e2e`   | Playwright browser tests (`tests/e2e`): navigation, language switching, FAQ, keyboard focus, mobile layout, reduced motion, use without JavaScript, the home contact section and footer contact, the early access link, real screenshots loading, and axe accessibility checks                                                                                                                                                                                                                      |
+| `site run test:live`  | Visits every page of the live site. See [Development and deployment](deployment.en.md#checking-the-live-build)                                                                                                                                                                                                                                                                                                                                                                                      |
 
 Browser tests use only Chromium by default. To include Firefox and WebKit, run `site browsers all`, then set the environment variable `E2E_BROWSERS=all`. To test the GitHub Pages project path, set `BASE_PATH=/QCopilots-Website/` before building and testing. On Linux, add `--with-deps` the first time, as in `site browsers all --with-deps`, to install the system packages browsers need.
 

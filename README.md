@@ -61,7 +61,9 @@ bash scripts/site.sh dev
 src/content/           文案与产品数据，日常维护主要改这里
   products/<id>.ts     每个产品一个文件，包含中英文内容
   products.ts          产品注册表
-  ui.ts                导航、首页等公共文案
+  ui.ts                导航、首页、合作方式等公共文案
+  site.ts              公司名称、版权年份和联系邮箱
+src/assets/real-runs/  产品页“一次真实运行”的截图，规则见其中的 README
 src/components/        页面组件，demos/ 是产品界面示意
 src/styles/            tokens.css（颜色、字号、间距）和 base.css
 public/images/         产品图标和分享预览图
@@ -77,6 +79,8 @@ docs/                  维护、部署、素材等文档
 - 产品文案在 `src/content/products/<id>.ts`，公共文案在 `src/content/ui.ts`。
 - 中文 `zh` 和英文 `en` 必须一一对应，条目数量和字段都要相同。
 - 英文文案里不能出现中文字符或全角标点。
+- 文案写给普通用户，不写网址、端口、密钥和本地路径这类技术细节。
+- 联系邮箱和公司名称只在 `src/content/site.ts` 中修改。
 - 改完运行 `site check`。修改了首页大标题，还要运行 `site run render:og` 更新分享图。
 
 详细规则见[内容维护](docs/maintenance.zh.md)。
@@ -98,14 +102,14 @@ docs/                  维护、部署、素材等文档
 
 ## 文档
 
-| 文档                                     | 内容                                     |
-| ---------------------------------------- | ---------------------------------------- |
-| [内容维护](docs/maintenance.zh.md)       | 内容模型、加产品、界面示意、发布前检查   |
-| [开发与部署](docs/deployment.zh.md)      | GitHub Pages、本机 Caddy、容器、开机服务 |
-| [设计参考](design-qa.md)                 | 颜色、字体、间距、组件和视觉检查清单     |
-| [素材记录](docs/assets.md)               | 图标、字体、分享图的来源与授权           |
-| [产品事实来源](docs/product-evidence.md) | 网站文案所依据的产品资料                 |
-| [验证记录](docs/verification.md)         | 历次验证的范围与结果                     |
+| 文档                                     | 内容                                                       |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| [内容维护](docs/maintenance.zh.md)       | 内容模型、联系方式、加产品、界面示意、真实截图、发布前检查 |
+| [开发与部署](docs/deployment.zh.md)      | GitHub Pages、本机 Caddy、容器、开机服务                   |
+| [设计参考](design-qa.md)                 | 颜色、字体、间距、组件和视觉检查清单                       |
+| [素材记录](docs/assets.md)               | 图标、字体、分享图、地图数据和真实截图的来源与授权         |
+| [产品事实来源](docs/product-evidence.md) | 网站文案所依据的产品资料和真实运行记录                     |
+| [验证记录](docs/verification.md)         | 历次验证的范围与结果                                       |
 
 ## 授权
 

@@ -11,7 +11,7 @@
 1. **像一本排版考究的刊物。** 象牙色纸面、暖色墨水、宽松的留白、衬线标题。安静，不喧闹。
 2. **内容优先。** 所有文字都是真实的 HTML。插图只做辅助，不承载关键信息。
 3. **一次只用一种强调色。** 全站使用陶土色（clay），产品页和产品卡片使用该产品自己的主题色。
-4. **视觉诚实。** 产品画面是用代码绘制并明确标注的示意，不冒充截图，不虚构运行结果。
+4. **视觉诚实。** 用代码绘制的产品画面明确标注为示意，不冒充截图。真实截图另外标注“真实截图”，写明录制日期和版本。两者都不虚构运行结果。
 5. **中英文同等对待。** 中文不是英文排版的附属品，有自己的字体、行高和标点规则。
 6. **轻快、独立。** 字体自托管，不依赖 CDN。只有浅色主题。动效可有可无，关掉后内容完整。
 
@@ -111,20 +111,24 @@
 
 ### 组件
 
-| 组件       | 要点                                                                                         |
-| ---------- | -------------------------------------------------------------------------------------------- |
-| 顶栏       | 吸顶，半透明象牙底色，滚动后出现底线。手机上收起为菜单。没有 JavaScript 时直接显示链接       |
-| 章节导航   | 产品页吸顶的章节链接                                                                         |
-| 主按钮     | `.button`：胶囊形，深墨底色、象牙色文字，最小高度 48px                                       |
-| 次按钮     | `.button-secondary`：透明底、燕麦色描边                                                      |
-| 不可用按钮 | 使用 `disabled` 或 `aria-disabled="true"`，浅色底、次要文字色                                |
-| 文字链接   | `.text-link`：强调文字色，悬停时出现下划线，箭头右移 3px                                     |
-| 眉题       | `.eyebrow`：标题上方的小标签，使用强调文字色                                                 |
-| 卡片       | 白色底、`--line` 描边、大圆角、`--shadow-1`                                                  |
-| 色带       | `.band`（`--ivory-100`）和 `.band-oat`（`--oat-200`）。示意底色和示例行使用 `--product-wash` |
-| 常见问题   | 原生 `details` / `summary`，展开时加号旋转                                                   |
-| 图标       | Phosphor：内容用 Light 风格，界面控件用 Regular 风格。大小 1.25em，`aria-hidden`，总是配文字 |
-| 线稿       | `LineArt.astro`，陶土色细线，纯装饰                                                          |
+| 组件       | 要点                                                                                                                                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 顶栏       | 吸顶，半透明象牙底色，滚动后出现底线。手机上收起为菜单。没有 JavaScript 时直接显示链接                                                                                                                                                            |
+| 章节导航   | 产品页吸顶的章节链接                                                                                                                                                                                                                              |
+| 主按钮     | `.button`：胶囊形，深墨底色、象牙色文字，最小高度 48px                                                                                                                                                                                            |
+| 次按钮     | `.button-secondary`：透明底、燕麦色描边                                                                                                                                                                                                           |
+| 不可用按钮 | 使用 `disabled` 或 `aria-disabled="true"`，浅色底、次要文字色                                                                                                                                                                                     |
+| 文字链接   | `.text-link`：强调文字色，悬停时出现下划线，箭头右移 3px                                                                                                                                                                                          |
+| 眉题       | `.eyebrow`：标题上方的小标签，使用强调文字色                                                                                                                                                                                                      |
+| 卡片       | 白色底、`--line` 描边、大圆角、`--shadow-1`                                                                                                                                                                                                       |
+| 色带       | `.band`（`--ivory-100`）和 `.band-oat`（`--oat-200`）。示意底色和示例行使用 `--product-wash`                                                                                                                                                      |
+| 常见问题   | 原生 `details` / `summary`，展开时加号旋转                                                                                                                                                                                                        |
+| 图标       | Phosphor：内容用 Light 风格，界面控件用 Regular 风格。大小 1.25em，`aria-hidden`，总是配文字                                                                                                                                                      |
+| 线稿       | `LineArt.astro`，陶土色细线，纯装饰                                                                                                                                                                                                               |
+| 合作方式   | 首页 `#contact`，`ContactSection.astro`。白色卡片，图标在浅陶土色圆底中。手机上一列，640px 起两列，1024px 起图标放在文字左侧。卡片下方是主按钮和完整的邮箱地址                                                                                    |
+| 页脚联系栏 | “联系我们”一栏：邮箱和合作方式链接。1024px 起四栏，768–1023px 三栏且品牌占一行，767px 及以下两栏且联系栏占一行。长邮箱在 @ 前换行。底部是版权行，英文页面中的公司名称标注 `lang="zh-CN"`                                                          |
+| 试用邀请   | 即将推出产品的下载卡片下方，不在卡片里面。产品 `wash` 底色、邮件图标和“申请试用”文字链接                                                                                                                                                          |
+| 真实运行   | `RealRun.astro`，位于 `#use-cases` 的示例列表下方。象牙底、`--radius-xl` 大圆角。960px 起按 5:7 左右分栏，左侧笔记、右侧截图。截图放在白色衬框中，第一张大图，其余 480px 起两张一行，右上角是放大图标。“真实截图”标签用产品 `accentInk` 配 `wash` |
 
 样式规则：
 
@@ -148,7 +152,7 @@
 - 每页有跳到正文的链接，且只有一个 `h1`，标题层级不跳级。
 - `<html lang>` 为 `zh-CN` 或 `en`，页面中的另一种语言片段单独标注 `lang`。
 - 主要按钮至少 48px 高，其他可点击目标至少 24px。
-- 图片都有 `alt`，纯装饰的元素设为 `aria-hidden`。
+- 图片都有 `alt`，纯装饰的元素设为 `aria-hidden`。真实截图的 `alt` 描述画面内容，原图链接带有“查看原图”的隐藏文字。
 - 不把重要内容藏在悬停之后。
 - 没有 JavaScript 时，导航链接、常见问题和下载入口都可以使用。
 - 浏览器测试用 axe 按 WCAG 2.1 A / AA 检查每个页面。
@@ -180,8 +184,25 @@
 - [ ] 每个产品页和卡片使用自己的主题色
 - [ ] 按 `Tab` 时焦点框清晰可见，顺序合理
 - [ ] 标题是衬线字体，正文是无衬线字体。开发者工具的 Network 面板中，字体都来自本站地址
-- [ ] 英文页面除语言切换外没有中文
+- [ ] 英文页面除语言切换和页脚中的公司名称外没有中文
 - [ ] 下载区状态正确：QCopilots 显示“即将开放下载”，Search 链接可以打开
+
+**合作与联系**：在首页和任意一个产品页检查，宽度再加上 **320** px。
+
+- [ ] 首页“合作方式”的卡片完整，邮箱地址在窄屏下换行而不溢出，“写邮件给我们”按钮至少 48px 高
+- [ ] 点击“写邮件给我们”会打开邮件程序，收件人和主题正确
+- [ ] 每页页脚都有邮箱和“合作方式”链接。从产品页点击“合作方式”，会落在首页的合作方式区块
+- [ ] 版权行中文为“© 2026 北京星球时空智能科技有限公司 版权所有”，英文为 “© 2026 北京星球时空智能科技有限公司. All rights reserved.”，320px 下不溢出
+- [ ] QCopilots 的下载卡片下方有“申请试用”，Search 页面没有。试用链接不在卡片里面
+
+**真实运行**：在有 `realRun` 的产品页检查，宽度为 **320**、**390**、**768**、**1440** px。
+
+- [ ] 区块位于“使用示例”一章中，章节导航没有多出新项
+- [ ] 320px 和 390px 下截图排成一列，768px 下第一张大图、其余两张一行，1440px 下笔记和截图左右分栏
+- [ ] 截图完整显示，没有被拉伸或裁掉，白色衬框四周留白均匀，放大图标不遮挡关键内容
+- [ ] “真实截图”标签清晰可读，与示意的“界面示意”标签不会混淆。换过产品主题色时，确认 `site check` 的对比度检查仍然通过
+- [ ] 点击截图会打开原图，原图中没有隐私信息
+- [ ] 录制日期和版本在两种语言中一致，长版本号、输入原话和图片说明正常换行
 
 **减少动态效果**：按 `Ctrl+Shift+P`，输入 “Rendering” 打开渲染面板，把 “Emulate CSS media feature prefers-reduced-motion” 设为 `reduce`，刷新页面。
 
@@ -189,7 +210,7 @@
 
 **没有 JavaScript**：按 `Ctrl+Shift+P`，输入 “Disable JavaScript” 并执行，刷新页面。检查结束后用 “Enable JavaScript” 恢复。
 
-- [ ] 全部内容可见，导航链接可用，常见问题能展开，界面示意显示第一个场景
+- [ ] 全部内容可见，导航链接可用，常见问题能展开，界面示意显示第一个场景，真实截图和原图链接正常
 
 **分享图**：修改过首页标题时，确认 `public/images/og-zh.png` 和 `og-en.png` 已重新生成。
 
@@ -204,7 +225,7 @@ This is the design reference for the site's current “warm editorial” directi
 1. **Like a well-set publication.** Ivory paper, warm ink, generous white space, serif headlines. Calm, not loud.
 2. **Content first.** All text is real HTML. Illustrations support the text and never carry essential information.
 3. **One accent at a time.** The site uses clay. Product pages and product cards use that product's own theme colour.
-4. **Honest visuals.** Product windows are labelled illustrations drawn in code. They never pose as screenshots or invent results.
+4. **Honest visuals.** Product windows drawn in code are labelled as illustrations and never pose as screenshots. Real screenshots carry their own “Real screenshots” label with the recording date and version. Neither invents results.
 5. **Both languages are first class.** Chinese is not an afterthought to English layout. It has its own fonts, line heights and punctuation rules.
 6. **Light and self-contained.** Fonts are self-hosted with no CDN. Light theme only. Motion is optional, and content is complete without it.
 
@@ -304,20 +325,24 @@ Rules for Chinese:
 
 ### Components
 
-| Component          | Notes                                                                                                                        |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Header             | Sticky, translucent ivory, gains a bottom line after scrolling. A menu on phones. Without JavaScript the links show directly |
-| Chapter navigation | Sticky chapter links on product pages                                                                                        |
-| Primary button     | `.button`: pill shape, dark ink background, ivory text, at least 48px tall                                                   |
-| Secondary button   | `.button-secondary`: transparent with an oat outline                                                                         |
-| Unavailable button | `disabled` or `aria-disabled="true"`, pale background, secondary text colour                                                 |
-| Text link          | `.text-link`: accent text colour, underline on hover, arrow moves 3px right                                                  |
-| Eyebrow            | `.eyebrow`: a small label above headings, in accent text colour                                                              |
-| Card               | White background, `--line` border, large radius, `--shadow-1`                                                                |
-| Band               | `.band` (`--ivory-100`) and `.band-oat` (`--oat-200`). Demo stages and example rows use `--product-wash`                     |
-| FAQ                | Native `details` / `summary`, the plus icon rotates when open                                                                |
-| Icons              | Phosphor: Light weight for content, Regular for interface controls. 1.25em, `aria-hidden`, always with text                  |
-| Line art           | `LineArt.astro`, thin clay lines, decoration only                                                                            |
+| Component          | Notes                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header             | Sticky, translucent ivory, gains a bottom line after scrolling. A menu on phones. Without JavaScript the links show directly                                                                                                                                                                                                                                                            |
+| Chapter navigation | Sticky chapter links on product pages                                                                                                                                                                                                                                                                                                                                                   |
+| Primary button     | `.button`: pill shape, dark ink background, ivory text, at least 48px tall                                                                                                                                                                                                                                                                                                              |
+| Secondary button   | `.button-secondary`: transparent with an oat outline                                                                                                                                                                                                                                                                                                                                    |
+| Unavailable button | `disabled` or `aria-disabled="true"`, pale background, secondary text colour                                                                                                                                                                                                                                                                                                            |
+| Text link          | `.text-link`: accent text colour, underline on hover, arrow moves 3px right                                                                                                                                                                                                                                                                                                             |
+| Eyebrow            | `.eyebrow`: a small label above headings, in accent text colour                                                                                                                                                                                                                                                                                                                         |
+| Card               | White background, `--line` border, large radius, `--shadow-1`                                                                                                                                                                                                                                                                                                                           |
+| Band               | `.band` (`--ivory-100`) and `.band-oat` (`--oat-200`). Demo stages and example rows use `--product-wash`                                                                                                                                                                                                                                                                                |
+| FAQ                | Native `details` / `summary`, the plus icon rotates when open                                                                                                                                                                                                                                                                                                                           |
+| Icons              | Phosphor: Light weight for content, Regular for interface controls. 1.25em, `aria-hidden`, always with text                                                                                                                                                                                                                                                                             |
+| Line art           | `LineArt.astro`, thin clay lines, decoration only                                                                                                                                                                                                                                                                                                                                       |
+| Work with us       | Home `#contact`, `ContactSection.astro`. White cards with icons on pale clay circles. One column on phones, two from 640px, icon beside the text from 1024px. A primary button and the full email address below the cards                                                                                                                                                               |
+| Footer contact     | A “Contact” column with the email and a link to the ways to work with us. Four columns from 1024px, three from 768 to 1023px with the brand on its own row, two at 767px and below with the contact column on its own row. Long addresses break before the @. The copyright line sits at the bottom, and on English pages the company name carries `lang="zh-CN"`                       |
+| Early access       | Below the download cards of coming-soon products, never inside a card. Product `wash` background, a mail icon and a “Request early access” text link                                                                                                                                                                                                                                    |
+| Real run           | `RealRun.astro`, below the examples in `#use-cases`. Ivory background, large `--radius-xl` corners. From 960px it splits 5:7 with notes on the left and screenshots on the right. Screenshots sit in white mounts, the first one large and the rest two to a row from 480px, with an enlarge icon at the top right. The “Real screenshots” label uses the product `accentInk` on `wash` |
 
 Style rules:
 
@@ -341,7 +366,7 @@ Style rules:
 - Every page has a skip link to the main content and exactly one `h1`. Heading levels do not skip.
 - `<html lang>` is `zh-CN` or `en`. Snippets in the other language carry their own `lang`.
 - Primary buttons are at least 48px tall. Other click targets are at least 24px.
-- Every image has `alt`. Purely decorative elements are `aria-hidden`.
+- Every image has `alt`. Purely decorative elements are `aria-hidden`. The `alt` of a real screenshot describes what it shows, and its full-size link carries hidden “Open full size” text.
 - Nothing important hides behind hover.
 - Without JavaScript, navigation links, FAQ and downloads all work.
 - Browser tests run axe against WCAG 2.1 A / AA on every page.
@@ -373,8 +398,25 @@ Open the site with `site dev` and press `F12` in Chrome to open DevTools.
 - [ ] Each product page and card uses its own theme colour
 - [ ] Pressing `Tab` shows a clear focus ring in a sensible order
 - [ ] Headings are serif and body text is sans-serif. In the DevTools Network panel, every font comes from the site's own address
-- [ ] English pages show no Chinese apart from the language switch
+- [ ] English pages show no Chinese apart from the language switch and the company name in the footer
 - [ ] Downloads are right: QCopilots shows “Download coming soon” and the Search links open
+
+**Contact**: check the home page and any product page, adding a **320** px width.
+
+- [ ] The “Work with us” cards are complete, the email address wraps on narrow screens instead of overflowing, and the “Email us” button is at least 48px tall
+- [ ] “Email us” opens the mail app with the right recipient and subject
+- [ ] Every page footer shows the email and the “Ways to work with us” link. From a product page, that link lands on the home contact section
+- [ ] The copyright line reads “© 2026 北京星球时空智能科技有限公司 版权所有” in Chinese and “© 2026 北京星球时空智能科技有限公司. All rights reserved.” in English, without overflowing at 320px
+- [ ] QCopilots shows “Request early access” below its download cards and Search does not. The link is never inside a card
+
+**Real run**: check product pages that have a `realRun` at **320**, **390**, **768** and **1440** px.
+
+- [ ] The block sits inside the examples chapter, and the chapter navigation gains no new entry
+- [ ] Screenshots form one column at 320px and 390px, the first one large with the rest two to a row at 768px, and notes and screenshots side by side at 1440px
+- [ ] Screenshots show in full, never stretched or cropped, with even white margins in the mount, and the enlarge icon covers nothing important
+- [ ] The “Real screenshots” label is easy to read and cannot be mistaken for the demos' “Illustrative preview” label. After changing a product's theme colours, confirm the `site check` contrast check still passes
+- [ ] Clicking a screenshot opens the full-size image, and it shows no private details
+- [ ] The recording date and version match in both languages, and long version strings, prompts and captions wrap cleanly
 
 **Reduced motion**: press `Ctrl+Shift+P`, type “Rendering” to open the Rendering panel, set “Emulate CSS media feature prefers-reduced-motion” to `reduce`, then reload.
 
@@ -382,7 +424,7 @@ Open the site with `site dev` and press `F12` in Chrome to open DevTools.
 
 **No JavaScript**: press `Ctrl+Shift+P`, run “Disable JavaScript”, then reload. Run “Enable JavaScript” when you are done.
 
-- [ ] All content shows, navigation links work, FAQ answers expand and demos show their first scene
+- [ ] All content shows, navigation links work, FAQ answers expand, demos show their first scene, and real screenshots and their full-size links work
 
 **Share images**: if the home headline changed, confirm `public/images/og-zh.png` and `og-en.png` were regenerated.
 

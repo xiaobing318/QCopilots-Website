@@ -61,7 +61,9 @@ Run `site help` to list every command.
 src/content/           Copy and product data. Most edits happen here
   products/<id>.ts     One file per product, with both languages
   products.ts          Product registry
-  ui.ts                Navigation, home page and other shared copy
+  ui.ts                Navigation, home page, ways to work with us and other shared copy
+  site.ts              Company name, copyright year and contact email
+src/assets/real-runs/  Screenshots for “A real run” on product pages. Rules in its README
 src/components/        Page components. demos/ holds the product UI illustrations
 src/styles/            tokens.css (colours, type sizes, spacing) and base.css
 public/images/         Product icons and social preview images
@@ -77,6 +79,8 @@ Chinese pages start with `/zh/` and English pages with `/en/`. The root address 
 - Product copy lives in `src/content/products/<id>.ts`. Shared copy lives in `src/content/ui.ts`.
 - The Chinese `zh` and English `en` sides must match: the same fields and the same number of entries.
 - English copy must not contain Chinese characters or full-width punctuation.
+- Copy is for everyday users. Leave out technical details such as web addresses, ports, keys and local paths.
+- Change the contact email and company name only in `src/content/site.ts`.
 - Run `site check` afterwards. If you changed the home headline, also run `site run render:og` to refresh the share images.
 
 See [Maintenance](docs/maintenance.en.md) for the full rules.
@@ -98,14 +102,14 @@ To pause automatic publishing, set the repository variable `PAGES_ENABLED` to `f
 
 ## Documents
 
-| Document                                            | Contents                                                  |
-| --------------------------------------------------- | --------------------------------------------------------- |
-| [Maintenance](docs/maintenance.en.md)               | Content model, adding products, demos, pre-publish checks |
-| [Development and deployment](docs/deployment.en.md) | GitHub Pages, native Caddy, containers, startup services  |
-| [Design reference](design-qa.md)                    | Colours, type, spacing, components and a visual QA list   |
-| [Assets](docs/assets.md)                            | Origin and licenses of icons, fonts and share images      |
-| [Product evidence](docs/product-evidence.md)        | Product sources behind the website copy                   |
-| [Verification](docs/verification.md)                | Scope and results of past verification runs               |
+| Document                                            | Contents                                                                                     |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [Maintenance](docs/maintenance.en.md)               | Content model, contact details, adding products, demos, real screenshots, pre-publish checks |
+| [Development and deployment](docs/deployment.en.md) | GitHub Pages, native Caddy, containers, startup services                                     |
+| [Design reference](design-qa.md)                    | Colours, type, spacing, components and a visual QA list                                      |
+| [Assets](docs/assets.md)                            | Origin and licenses of icons, fonts, share images, map data and real screenshots             |
+| [Product evidence](docs/product-evidence.md)        | Product sources and real-run records behind the website copy                                 |
+| [Verification](docs/verification.md)                | Scope and results of past verification runs                                                  |
 
 ## Licensing
 
