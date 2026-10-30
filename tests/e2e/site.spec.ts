@@ -1,12 +1,15 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { products } from '../../src/content/products';
+import { organization } from '../../src/content/site';
 import { ui } from '../../src/content/ui';
+import { format } from '../../src/lib/i18n';
 import {
   chineseOutsideZh,
   collectConsoleErrors,
   collectRequests,
   horizontalOverflow,
+  parseMailto,
 } from '../shared/checks';
 
 const locales = ['zh', 'en'] as const;
@@ -399,6 +402,88 @@ test('download sections reflect availability without dead links', async ({ page 
   }
 });
 
+test('coming-soon products invite early access by email, outside the download cards', async ({
+  page,
+}) => {
+  for (const locale of locales) {
+    const t = ui[locale].product;
+    for (const product of products) {
+      await page.goto(`${locale}/products/${product.id}/`);
+      const trial = page.locator('[data-trial]');
+      if (product.status !== 'coming-soon') {
+        await expect(trial).toHaveCount(0);
+        continue;
+      }
+      await expect(trial).toHaveCount(1);
+      await expect(trial).toContainText(t.trialPrompt);
+      const link = trial.locator('a[data-trial-link]');
+      await expect(link).toBeVisible();
+      await expect(link).toContainText(t.trialCta);
+      expect(parseMailto(await link.getAttribute('href'))).toEqual({
+        address: organization.email,
+        subject: format(t.trialSubject, { name: product.locales[locale].name }),
+      });
+      await expect(page.locator('article [data-trial], article [data-trial-link]')).toHaveCount(0);
+      // Pending cards stay link-free: the invitation is the only way forward before release.
+      await expect(page.locator('#downloads article[data-state="pending"] a')).toHaveCount(0);
+    }
+  }
+});
+
+test.describe('real runs', () => {
+  for (const product of products) {
+    test(`${product.id} real run shows its recorded screenshots`, async ({ page, request }) => {
+      test.skip(
+        locales.every((locale) => !product.locales[locale].realRun),
+        'No recorded run for this product yet.',
+      );
+      for (const locale of locales) {
+        const run = product.locales[locale].realRun;
+        await page.goto(`${locale}/products/${product.id}/`);
+        const block = page.locator('#use-cases #real-run');
+        if (!run) {
+          await expect(page.locator('#real-run')).toHaveCount(0);
+          continue;
+        }
+        await expect(block).toHaveCount(1);
+        await expect(block.locator('h3#real-run-title')).toHaveText(run.title);
+        await expect(block.locator('[data-real-badge]')).toHaveText(ui[locale].product.realBadge);
+        const prompts = block.locator('[data-real-prompts] > li');
+        await expect(prompts).toHaveCount(run.prompts.length);
+        for (const [index, prompt] of run.prompts.entries())
+          await expect(prompts.nth(index)).toContainText(prompt);
+        await expect(block.locator('[data-real-steps] > li')).toHaveCount(run.steps.length);
+        await expect(block.locator('[data-real-facts] dt')).toHaveCount(run.facts.length);
+        const figures = block.locator('figure[data-real-image]');
+        await expect(figures).toHaveCount(run.images.length);
+        for (const [index, image] of run.images.entries()) {
+          const figure = figures.nth(index);
+          const img = figure.locator('img');
+          await expect(img).toHaveAttribute('alt', image.alt);
+          await expect(figure.locator('figcaption')).toContainText(image.caption);
+          await img.scrollIntoViewIfNeeded();
+          await expect
+            .poll(() =>
+              img.evaluate(
+                (element) =>
+                  element instanceof HTMLImageElement &&
+                  element.complete &&
+                  element.naturalWidth > 0,
+              ),
+            )
+            .toBe(true);
+          // The screenshot links to its full-size file, which must be published.
+          const open = img.locator('xpath=ancestor::a[@data-real-open]');
+          await expect(open).toHaveCount(1);
+          const href = await open.evaluate((anchor) => (anchor as HTMLAnchorElement).href);
+          const response = await request.get(href);
+          expect(response.ok(), `${response.status()} ${href}`).toBe(true);
+        }
+      }
+    });
+  }
+});
+
 test.describe('product demos', () => {
   for (const product of products) {
     test(`${product.id} demo is decorative, captioned and pausable`, async ({ page }) => {
@@ -488,6 +573,65 @@ test.describe('product demos without JavaScript', () => {
       }
     }
   });
+});
+
+test('the home contact chapter lists the ways to work together and the email', async ({ page }) => {
+  for (const locale of locales) {
+    const t = ui[locale].contact;
+    await page.goto(`${locale}/`);
+    const contact = page.locator('section#contact');
+    await expect(contact).toHaveAttribute('aria-labelledby', 'contact-title');
+    await expect(contact.locator('#contact-title')).toHaveText(t.title);
+    await expect(contact.locator('[data-contact-type] h3')).toHaveText(
+      t.types.map((type) => type.title),
+    );
+    const email = contact.locator('a[data-contact-email]');
+    await expect(email).toBeVisible();
+    expect(parseMailto(await email.getAttribute('href'))).toEqual({
+      address: organization.email,
+      subject: t.emailSubject,
+    });
+    await expect(contact.getByText(organization.email).first()).toBeVisible();
+  }
+});
+
+test('the footer offers the email, the contact chapter and the copyright', async ({
+  page,
+  baseURL,
+}) => {
+  const year = String(organization.copyrightYear);
+  for (const locale of locales) {
+    for (const route of [`${locale}/`, `${locale}/products/${lastProduct.id}/`]) {
+      await page.goto(route);
+      const email = page.locator('footer a[data-footer-email]');
+      await expect(email).toBeVisible();
+      await expect(email).toContainText(organization.email);
+      expect(parseMailto(await email.getAttribute('href'))?.address).toBe(organization.email);
+      await expect(page.locator('footer a[data-footer-contact]')).toBeVisible();
+      const copyright = page.locator('footer [data-copyright]');
+      await expect(copyright).toBeVisible();
+      await expect(copyright).toContainText(year);
+      await expect(copyright).toContainText(organization.name);
+      expect((await copyright.textContent())?.replace(/\s+/g, '')).toBe(
+        format(ui[locale].footer.copyright, { year, company: organization.name }).replace(
+          /\s+/g,
+          '',
+        ),
+      );
+      // The company name keeps its Chinese form, marked as Chinese on English pages too.
+      await expect(copyright.locator(`[lang="${organization.nameLang}"]`)).toHaveText(
+        organization.name,
+      );
+      if (locale === 'en') expect(await chineseOutsideZh(page), route).toEqual([]);
+    }
+    // From a product page, the footer contact link lands on the home contact chapter.
+    await page.goto(`${locale}/products/${lastProduct.id}/`);
+    await page.locator('footer a[data-footer-contact]').click();
+    await expect(page).toHaveURL(new URL(`${locale}/#contact`, baseURL).href);
+    // Late font swaps can shift the page in engines without scroll anchoring.
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('#contact')).toBeInViewport();
+  }
 });
 
 test('English pages show no Chinese outside language-marked elements', async ({ page }) => {
@@ -649,6 +793,11 @@ test('all internal links and images resolve under the configured base path', asy
       .evaluateAll((anchors) => anchors.map((anchor) => (anchor as HTMLAnchorElement).href));
     for (const href of hrefs) {
       const url = new URL(href);
+      // mailto: opens the visitor's mail app. Check the address, never follow it.
+      if (url.protocol === 'mailto:') {
+        expect(parseMailto(href)?.address, `${route}: ${href}`).toBe(organization.email);
+        continue;
+      }
       if (url.origin !== origin) continue;
       expect(url.pathname.startsWith(basePath), `${href} escaped BASE_PATH ${basePath}`).toBe(true);
       if (url.pathname === new URL(page.url()).pathname) {

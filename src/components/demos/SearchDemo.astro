@@ -107,7 +107,7 @@ const stars = Array.from({ length: 26 }, (_, index) => [
               {labels.code}
             </span>
             <span class="qcs-summary d-in" style="--d:2">
-              {labels.results?.replace('{count}', String(results.length))}
+              {labels.results?.replace('{count}', String(scene.total ?? results.length))}
             </span>
           </div>
           <div class="qcs-split">

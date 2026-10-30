@@ -1,6 +1,7 @@
 ---
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import ClosingCta from '../../components/home/ClosingCta.astro';
+import ContactSection from '../../components/home/ContactSection.astro';
 import ExampleRows from '../../components/home/ExampleRows.astro';
 import HomeHero from '../../components/home/HomeHero.astro';
 import PrinciplesBand from '../../components/home/PrinciplesBand.astro';
@@ -41,6 +42,7 @@ const t = ui[locale];
   </section>
   <ExampleRows locale={locale} />
   <PrinciplesBand locale={locale} />
+  <ContactSection locale={locale} />
   <ClosingCta locale={locale} />
 </SiteLayout>
 

@@ -1,6 +1,8 @@
 ---
 import type { Locale, Product } from '../../content/types.ts';
+import { organization } from '../../content/site.ts';
 import { ui } from '../../content/ui.ts';
+import { format } from '../../lib/i18n.ts';
 import Icon from '../Icon.astro';
 import SectionIntro from '../SectionIntro.astro';
 interface Props {
@@ -10,6 +12,12 @@ interface Props {
 const { product, locale } = Astro.props;
 const content = product.locales[locale];
 const t = ui[locale].product;
+// Early access is requested by email. It sits outside the cards, which hold no links while pending.
+const invite = product.status === 'coming-soon';
+const trialSubject = format(t.trialSubject, { name: content.name });
+const trialHref = `mailto:${organization.email}?subject=${encodeURIComponent(trialSubject)}`;
+// A lone card keeps a card's width, and the invitation sits beside it on wider screens.
+const single = product.downloads.length === 1;
 ---
 
 <section id="downloads" class="section band" aria-labelledby="downloads-title">
@@ -20,24 +28,38 @@ const t = ui[locale].product;
       title={content.downloads.title}
       lead={content.downloads.description}
     />
-    <div class="download-grid">
-      {product.downloads.map((entry) => (
-        <article data-download={entry.id} data-state={entry.url ? 'available' : 'pending'}>
-          <h3>{entry.label[locale]}</h3>
-          {entry.requirements && <p class="requirement">{entry.requirements[locale]}</p>}
-          {entry.version && <p class="version">v{entry.version}</p>}
-          {entry.url ? (
-            <a class="button" href={entry.url} rel="noopener">
-              <Icon name="download" />
-              {t.download}
-            </a>
-          ) : (
-            <span class="button" aria-disabled="true">
-              {t.downloadSoon}
-            </span>
-          )}
-        </article>
-      ))}
+    <div class:list={['download-set', single && 'is-single']}>
+      <div class="download-grid">
+        {product.downloads.map((entry) => (
+          <article data-download={entry.id} data-state={entry.url ? 'available' : 'pending'}>
+            <h3>{entry.label[locale]}</h3>
+            {entry.requirements && <p class="requirement">{entry.requirements[locale]}</p>}
+            {entry.version && <p class="version">v{entry.version}</p>}
+            {entry.url ? (
+              <a class="button" href={entry.url} rel="noopener">
+                <Icon name="download" />
+                {t.download}
+              </a>
+            ) : (
+              <span class="button" aria-disabled="true">
+                {t.downloadSoon}
+              </span>
+            )}
+          </article>
+        ))}
+      </div>
+      {invite && (
+        <p class="trial" data-trial>
+          <span class="trial-icon">
+            <Icon name="mail" />
+          </span>
+          <span class="trial-prompt">{t.trialPrompt}</span>{' '}
+          <a class="text-link" data-trial-link href={trialHref}>
+            {t.trialCta}
+            <Icon name="arrow" class="icon-arrow" />
+          </a>
+        </p>
+      )}
     </div>
     <div class="details">
       <h3>{t.requirements}</h3>
@@ -70,6 +92,12 @@ const t = ui[locale].product;
 </section>
 
 <style>
+  /* The cards and, before release, the invitation below them. */
+  .download-set {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
   .download-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
@@ -98,6 +126,51 @@ const t = ui[locale].product;
   }
   article .button {
     margin-top: var(--space-4);
+  }
+  /*
+   * The invitation is a quiet note, not a second card: the icon on the left, the question and
+   * the link stacked in the text column. Under a card it lines up with the card's left edge.
+   */
+  .trial {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-1) var(--space-4);
+  }
+  .trial-icon {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    grid-area: 1 / 1 / span 2;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+  }
+  .trial-icon :global(.icon) {
+    width: 22px;
+    height: 22px;
+  }
+  .trial-prompt {
+    grid-area: 1 / 2;
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    line-height: var(--leading-heading);
+    text-wrap: balance;
+  }
+  .trial .text-link {
+    grid-area: 2 / 2;
+    justify-self: start;
+  }
+  /* Wider screens: one card at a card's width, the invitation beside it, centred on it. */
+  @media (min-width: 768px) {
+    .is-single {
+      grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+      align-items: center;
+      column-gap: var(--space-7);
+    }
   }
   .details {
     display: grid;

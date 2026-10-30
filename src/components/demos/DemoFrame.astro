@@ -132,6 +132,9 @@ const t = ui[locale].demo;
     margin-top: var(--space-4);
     color: var(--text-muted);
     font-size: var(--text-xs);
+    /* On phones the caption wraps: keep its lines centred under the pill, evenly broken. */
+    text-align: center;
+    text-wrap: balance;
   }
   .demo-label {
     padding: 0.15em 0.7em;

@@ -30,6 +30,10 @@ const Heading = level;
     justify-items: center;
     text-align: center;
   }
+  /* Even lines, so no Chinese or English lead ends on a lone character or word. */
+  .lead {
+    text-wrap: balance;
+  }
   .align-center .lead {
     margin-inline: auto;
   }

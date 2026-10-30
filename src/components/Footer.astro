@@ -1,14 +1,24 @@
 ---
 import type { Locale } from '../content/types.ts';
 import { products } from '../content/products.ts';
+import { organization } from '../content/site.ts';
 import { ui } from '../content/ui.ts';
+import { format } from '../lib/i18n.ts';
 import { asset, route } from '../lib/site.mjs';
+import Icon from './Icon.astro';
 interface Props {
   locale: Locale;
   slug?: string;
 }
 const { locale, slug = '' } = Astro.props;
 const t = ui[locale];
+const mailto = `mailto:${organization.email}?subject=${encodeURIComponent(t.contact.emailSubject)}`;
+const [emailUser, emailDomain] = organization.email.split('@');
+// The company name keeps its own language tag, so the template is split around {company}.
+const year = String(organization.copyrightYear);
+const [copyrightBefore, copyrightAfter = ''] = t.footer.copyright
+  .split('{company}')
+  .map((part) => format(part, { year }));
 ---
 
 <footer class="site-footer">
@@ -35,9 +45,29 @@ const t = ui[locale];
         English
       </a>
     </div>
+    <address class="footer-column footer-contact">
+      <p class="footer-heading">{t.contact.footerHeading}</p>
+      <a class="footer-email" data-footer-email href={mailto}>
+        <Icon name="mail" />
+        <span translate="no">
+          {emailUser}
+          <wbr />@{emailDomain}
+        </span>
+      </a>
+      <a data-footer-contact href={`${route(locale)}#contact`}>
+        {t.contact.footerLink}
+      </a>
+    </address>
     <div class="footer-meta">
+      <div class="footer-legal">
+        <p data-copyright>
+          {copyrightBefore}
+          <span lang={organization.nameLang}>{organization.name}</span>
+          {copyrightAfter}
+        </p>
+        <p>{t.footer.rights}</p>
+      </div>
       <a href={route(locale, 'licenses')}>{t.footer.licenses}</a>
-      <p>{t.footer.rights}</p>
     </div>
   </div>
 </footer>
@@ -73,7 +103,7 @@ const t = ui[locale];
   }
   .footer-inner {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
     gap: var(--space-7) var(--space-6);
   }
   .brand-mark {
@@ -95,6 +125,9 @@ const t = ui[locale];
     flex-direction: column;
     gap: var(--space-2);
   }
+  address {
+    font-style: normal;
+  }
   .footer-heading {
     margin-bottom: var(--space-2);
     color: var(--ink-900);
@@ -103,6 +136,7 @@ const t = ui[locale];
   .footer-column a,
   .footer-meta a {
     width: fit-content;
+    max-width: 100%;
     color: var(--text-muted);
     text-decoration: none;
   }
@@ -112,22 +146,51 @@ const t = ui[locale];
     text-decoration: underline;
     text-underline-offset: 0.25em;
   }
+  /* A long address breaks before the @ when the column is narrow, never through the icon. */
+  .footer-email {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  .footer-email span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .footer-email :global(.icon) {
+    height: 1lh;
+  }
   .footer-meta {
     display: flex;
     grid-column: 1 / -1;
     flex-wrap: wrap;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: var(--space-3) var(--space-6);
+    gap: var(--space-4) var(--space-6);
     padding-top: var(--space-6);
     border-top: 1px solid var(--line);
     color: var(--text-muted);
     font-size: var(--text-xs);
   }
-  @media (max-width: 767px) {
+  .footer-legal {
+    display: grid;
+    gap: var(--space-1);
+  }
+  [data-copyright] {
+    color: var(--text);
+  }
+  @media (max-width: 1023px) {
     .footer-inner {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .footer-brand {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 767px) {
+    .footer-inner {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .footer-contact {
       grid-column: 1 / -1;
     }
   }

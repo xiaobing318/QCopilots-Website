@@ -36,6 +36,25 @@ export function chineseOutsideZh(page: Page): Promise<string[]> {
   });
 }
 
+/**
+ * Address and subject of a mailto: link, or null for anything else.
+ * A "+" stays a "+": mail apps show it literally, so subjects must encode spaces as %20.
+ */
+export function parseMailto(href: string | null): { address: string; subject?: string } | null {
+  const match = /^mailto:([^?#]*)(?:\?([^#]*))?$/i.exec(href ?? '');
+  if (!match) return null;
+  const fields = new Map(
+    (match[2] ?? '')
+      .split('&')
+      .filter(Boolean)
+      .map((pair) => {
+        const [key, value = ''] = pair.split('=');
+        return [decodeURIComponent(key).toLowerCase(), decodeURIComponent(value)] as const;
+      }),
+  );
+  return { address: decodeURIComponent(match[1]), subject: fields.get('subject') };
+}
+
 /** How far the page scrolls sideways, with the widest elements that stick out to help debugging. */
 export function horizontalOverflow(page: Page): Promise<{ overflow: number; culprits: string[] }> {
   return page.evaluate(() => {

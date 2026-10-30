@@ -1,0 +1,621 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+import type { Locale, RealRun } from '../../content/types.ts';
+import { ui } from '../../content/ui.ts';
+import { format, htmlLang } from '../../lib/i18n.ts';
+import Icon from '../Icon.astro';
+
+interface Props {
+  locale: Locale;
+  realRun: RealRun;
+}
+const { locale, realRun } = Astro.props;
+const t = ui[locale];
+
+/** Screenshots live in src/assets/real-runs/ so Astro can resize them. Naming rules are in the README there. */
+const files = import.meta.glob<{ default: ImageMetadata }>(
+  '../../assets/real-runs/**/*.{png,jpg,jpeg}',
+  { eager: true },
+);
+const images = realRun.images.map((image) => {
+  const file = files[`../../assets/real-runs/${image.file}`];
+  if (!file)
+    throw new Error(
+      `Real run screenshot "${image.file}" was not found. Add it to src/assets/real-runs/ as a .png, .jpg or .jpeg file, or fix realRun.images in the product content.`,
+    );
+  const { width, height } = file.default;
+  return { ...image, metadata: file.default, ratio: width / height };
+});
+const [lead, ...rest] = images;
+
+// UTC on both sides, so the recording date never shifts by a day.
+const recorded = format(t.product.realRecorded, {
+  date: new Intl.DateTimeFormat(htmlLang(locale), { dateStyle: 'long', timeZone: 'UTC' }).format(
+    new Date(`${realRun.recordedOn}T00:00:00Z`),
+  ),
+});
+// "Build (details) · System" becomes separate items, so no separator is left hanging at a line end.
+const versionParts = realRun.version.split(/\s*·\s*/).filter(Boolean);
+
+/**
+ * Windows paths in a prompt are set in mono and may break after each backslash.
+ * Trailing sentence punctuation stays outside the path.
+ */
+const windowsPath = /[A-Z]:\\[^\s，。、；：？！“”‘’（）]+/g;
+const escapeHtml = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const promptParts = (prompt: string) => {
+  const parts: { text: string; code?: string }[] = [];
+  let last = 0;
+  for (const match of prompt.matchAll(windowsPath)) {
+    const path = match[0].replace(/[.,;:!?)]+$/, '');
+    if (match.index > last) parts.push({ text: prompt.slice(last, match.index) });
+    const [drive, ...folders] = path.split('\\');
+    parts.push({ text: path, code: `${drive}\\${folders.map(escapeHtml).join('\\<wbr>')}` });
+    last = match.index + path.length;
+  }
+  if (last < prompt.length) parts.push({ text: prompt.slice(last) });
+  return parts;
+};
+const prompts = realRun.prompts.map(promptParts);
+
+/*
+ * Sharp on large and high-density screens: up to the file's own width (Astro drops larger steps).
+ * Rendered widths: the lead spans the card. The others share one row, in the right column from
+ * 1120px, each as wide as its aspect ratio allows. Below 22rem of row they stack at full width.
+ */
+const widthsFor = (metadata: ImageMetadata) => [640, 1280, 1920, metadata.width];
+const leadSizes = '(min-width: 1312px) 1080px, (min-width: 400px) 82vw, calc(100vw - 88px)';
+const rowRatio = rest.reduce((sum, image) => sum + image.ratio, 0);
+// One column per screenshot, as wide as its aspect ratio. A portrait page keeps a readable minimum.
+const galleryColumns = rest
+  .map(({ ratio }) => `minmax(${ratio < 1 ? '7.5rem' : '0'}, ${ratio.toFixed(3)}fr)`)
+  .join(' ');
+const restSizes = (ratio: number) => {
+  const share = (ratio / rowRatio).toFixed(3);
+  return [
+    `(min-width: 1312px) calc(480px * ${share})`,
+    `(min-width: 1120px) calc((41vw - 60px) * ${share})`,
+    `(min-width: 480px) calc((82vw - 36px) * ${share})`,
+    'calc(100vw - 88px)',
+  ].join(', ');
+};
+---
+
+<div id="real-run" class="real-run" role="group" aria-labelledby="real-run-title">
+  <div class="real-head">
+    <div class="real-kicker">
+      <p class="eyebrow">{t.product.realRunEyebrow}</p>
+      <span class="real-badge" data-real-badge>
+        <Icon name="check" />
+        {t.product.realBadge}
+      </span>
+    </div>
+    <h3 id="real-run-title">{realRun.title}</h3>
+    <p class="real-intro">{realRun.intro}</p>
+    <ul class="real-meta" role="list">
+      <li>
+        <time datetime={realRun.recordedOn}>{recorded}</time>
+      </li>
+      {versionParts.map((part) => (
+        <li>{part}</li>
+      ))}
+    </ul>
+  </div>
+
+  {lead && (
+    <figure class="real-figure is-lead" data-real-image>
+      <a class="real-frame" href={lead.metadata.src} data-real-open>
+        <span class="real-zoom">
+          <span class="real-zoom-label">{t.product.realOpen}</span>
+          <Icon name="arrow-out" />
+        </span>
+        <Picture
+          src={lead.metadata}
+          alt={lead.alt}
+          formats={['avif']}
+          widths={widthsFor(lead.metadata)}
+          sizes={leadSizes}
+          quality="high"
+          loading="lazy"
+          decoding="async"
+        />
+      </a>
+      <figcaption>{lead.caption}</figcaption>
+    </figure>
+  )}
+
+  <div class="real-body">
+    <div class="real-notes">
+      <div class="real-block">
+        <h4 class="real-label">{t.product.realPrompts}</h4>
+        <ol class="real-prompts" role="list" data-real-prompts>
+          {prompts.map((parts) => (
+            <li>
+              <q>{parts.map((part) => (part.code ? <code set:html={part.code} /> : part.text))}</q>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div class="real-block">
+        <h4 class="real-label">{t.product.realSteps}</h4>
+        <ol class="real-steps" role="list" data-real-steps>
+          {realRun.steps.map((step) => (
+            <li>
+              <Icon name="check" />
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+
+    <div class="real-aside">
+      {rest.length > 0 && (
+        <div class="real-gallery" style={`--columns: ${galleryColumns}`}>
+          {rest.map((image) => (
+            <figure class="real-figure" data-real-image>
+              <a class="real-frame" href={image.metadata.src} data-real-open>
+                <span class="real-zoom">
+                  <span class="visually-hidden">{t.product.realOpen}</span>
+                  <Icon name="arrow-out" />
+                </span>
+                <Picture
+                  src={image.metadata}
+                  alt={image.alt}
+                  formats={['avif']}
+                  widths={widthsFor(image.metadata)}
+                  sizes={restSizes(image.ratio)}
+                  quality="high"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+              <figcaption>{image.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+
+      <dl class="real-facts" data-real-facts>
+        {realRun.facts.map((fact) => (
+          <div>
+            <dt>{fact.label}</dt>
+            <dd>{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <p class="real-note">{realRun.note}</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  /*
+   * A recorded run, set like a page from a lab notebook: the heading, the main screenshot across
+   * the page, then the notes beside the remaining evidence.
+   */
+  .real-run {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    padding: clamp(var(--space-4), 4vw, var(--space-8));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--ivory-50);
+    overflow-wrap: anywhere;
+  }
+  @media (min-width: 960px) {
+    .real-run {
+      gap: var(--space-7);
+    }
+  }
+
+  /* Heading */
+  .real-head {
+    display: grid;
+    gap: var(--space-3);
+    max-inline-size: 46rem;
+  }
+  .real-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-1);
+  }
+  .real-kicker .eyebrow {
+    margin: 0;
+  }
+  .real-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.25em 0.75em 0.25em 0.55em;
+    border-radius: var(--radius-pill);
+    background: var(--product-wash);
+    color: var(--product-accent-ink);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .real-badge :global(.icon) {
+    width: 1.15em;
+    height: 1.15em;
+  }
+  .real-intro {
+    color: var(--text);
+  }
+
+  /*
+   * Date and build. Each item hangs its dot in the gap to its left. An item that starts a line
+   * hangs it outside the list, where it is clipped, so a dot never starts or ends a line.
+   */
+  .real-meta {
+    --sep: 1.4em;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--sep);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    list-style: none;
+  }
+  .real-meta li {
+    position: relative;
+  }
+  .real-meta li::before {
+    content: '·';
+    content: '·' / '';
+    position: absolute;
+    top: 0;
+    right: 100%;
+    width: var(--sep);
+    text-align: center;
+  }
+
+  /*
+   * Notes and evidence: one column up to small laptops, where the remaining screenshots get the
+   * full width. Side by side from 1120px, when both columns are wide enough to read.
+   */
+  .real-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+  @media (min-width: 960px) {
+    .real-body {
+      gap: var(--space-7);
+    }
+  }
+  @media (min-width: 1120px) {
+    .real-body {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+  .real-notes,
+  .real-aside {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--space-6);
+    min-width: 0;
+  }
+  /* A comfortable line length when the notes run the full width. */
+  .real-notes,
+  .real-note {
+    max-inline-size: 44rem;
+  }
+
+  .real-block {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .real-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  :lang(zh-CN) .real-label {
+    letter-spacing: 0.12em;
+    text-transform: none;
+  }
+  .real-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  ol {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* What we typed: numbered quotes at reading size. */
+  .real-prompts {
+    gap: var(--space-4);
+    counter-reset: prompt;
+  }
+  .real-prompts li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--space-3);
+    counter-increment: prompt;
+  }
+  .real-prompts li::before {
+    content: counter(prompt, decimal-leading-zero);
+    content: counter(prompt, decimal-leading-zero) / '';
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .real-prompts li:only-child {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .real-prompts li:only-child::before {
+    content: none;
+  }
+  q {
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-style: italic;
+    line-height: 1.5;
+    quotes: '“' '”' '‘' '’';
+    text-wrap: pretty;
+  }
+  :lang(zh-CN) q {
+    font-style: normal;
+    line-height: 1.65;
+  }
+  code {
+    padding: 0.05em 0.3em;
+    border-radius: 4px;
+    background: var(--oat-200);
+    color: var(--ink-700);
+    font-family: var(--font-mono);
+    font-size: 0.84em;
+    font-style: normal;
+    overflow-wrap: anywhere;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* What it did: a short log, each step checked and joined by a hairline. */
+  .real-steps {
+    --mark: 1.25em;
+    gap: var(--space-3);
+  }
+  .real-steps li {
+    position: relative;
+    padding-left: calc(var(--mark) + var(--space-3));
+    color: var(--text);
+    text-wrap: pretty;
+  }
+  .real-steps li > :global(.icon) {
+    position: absolute;
+    top: calc((1lh - var(--mark)) / 2);
+    left: 0;
+    width: var(--mark);
+    height: var(--mark);
+    color: var(--product-accent-ink);
+  }
+  .real-steps li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: calc((1lh - var(--mark)) / 2 + var(--mark) + 3px);
+    bottom: calc(3px - var(--space-3) - (1lh - var(--mark)) / 2);
+    left: calc(var(--mark) / 2 - 0.5px);
+    width: 1px;
+    background: var(--oat-300);
+  }
+
+  /* Numbers from the run: quieter than the facts band further down, two to a row. */
+  .real-facts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4) var(--space-5);
+    margin: 0;
+  }
+  @media (min-width: 360px) {
+    .real-facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .real-facts div {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+  }
+  dd {
+    order: -1;
+    margin: 0;
+    color: var(--ink-900);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 400;
+    line-height: 1.2;
+    font-variant-numeric: lining-nums;
+  }
+  :lang(en) dd {
+    letter-spacing: -0.01em;
+  }
+  dt {
+    color: var(--text);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+  :lang(zh-CN) dt {
+    line-height: 1.7;
+  }
+
+  .real-note {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: 1.6;
+  }
+  :lang(zh-CN) .real-note {
+    line-height: 1.8;
+  }
+
+  /*
+   * Screenshots, each in a white mount. The lead spans the card. The others share a row, each
+   * column as wide as its screenshot's shape, and stack when the column is too narrow.
+   */
+  .real-figure {
+    display: grid;
+    gap: var(--space-5);
+    min-width: 0;
+    margin: 0;
+  }
+  .real-aside {
+    container-type: inline-size;
+  }
+  .real-gallery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6) var(--space-4);
+  }
+  /* Mounts and captions sit on shared rows: mounts side by side are equally tall, captions line up. */
+  .real-gallery .real-figure {
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: var(--space-5);
+  }
+  @container (min-width: 22rem) {
+    .real-gallery {
+      grid-template-columns: var(--columns);
+    }
+  }
+  .real-frame {
+    position: relative;
+    display: grid;
+    align-content: center;
+    padding: var(--space-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--paper);
+    box-shadow: var(--shadow-2);
+    transition: border-color var(--dur-1) var(--ease-out);
+  }
+  .is-lead .real-frame {
+    padding: var(--space-2);
+    border-radius: var(--radius-l);
+  }
+  .real-frame:focus-visible {
+    border-radius: var(--radius-m);
+  }
+  .is-lead .real-frame:focus-visible {
+    border-radius: var(--radius-l);
+  }
+  .real-frame :global(picture) {
+    display: block;
+  }
+  .real-frame :global(img) {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-s);
+    background: var(--ivory-100);
+  }
+  .is-lead .real-frame :global(img) {
+    border-radius: var(--radius-m);
+  }
+  .real-frame:hover {
+    border-color: var(--oat-300);
+  }
+
+  /* "Open full size": a small chip on the mount's lower edge, so it never reads as part of the app. */
+  .real-zoom {
+    position: absolute;
+    z-index: 1;
+    right: var(--space-3);
+    bottom: -14px;
+    display: inline-flex;
+    min-width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding-inline: 7px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--paper);
+    box-shadow:
+      var(--shadow-1),
+      0 4px 12px -4px rgb(31 30 27 / 0.18);
+    color: var(--ink-700);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    line-height: 1;
+    transition:
+      background-color var(--dur-1) var(--ease-out),
+      border-color var(--dur-1) var(--ease-out),
+      color var(--dur-1) var(--ease-out);
+  }
+  .is-lead .real-zoom {
+    right: var(--space-5);
+    padding-inline: 12px 10px;
+  }
+  /* On phones the screenshot is small, so the chip keeps only its arrow. The words stay for screen readers. */
+  @media (max-width: 639px) {
+    .is-lead .real-zoom {
+      right: var(--space-3);
+      padding-inline: 7px;
+    }
+    .real-zoom-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+  .real-zoom :global(.icon) {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+  .real-frame:hover .real-zoom,
+  .real-frame:focus-visible .real-zoom {
+    border-color: var(--ink-900);
+    background: var(--ink-900);
+    color: var(--ivory-50);
+  }
+
+  figcaption {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+  .is-lead figcaption {
+    font-size: var(--text-sm);
+  }
+  :lang(zh-CN) figcaption {
+    line-height: 1.75;
+  }
+</style>

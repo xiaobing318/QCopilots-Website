@@ -1,0 +1,148 @@
+---
+import type { Locale } from '../../content/types.ts';
+import { organization } from '../../content/site.ts';
+import { ui } from '../../content/ui.ts';
+import Icon from '../Icon.astro';
+import SectionIntro from '../SectionIntro.astro';
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = ui[locale].contact;
+const mailto = `mailto:${organization.email}?subject=${encodeURIComponent(t.emailSubject)}`;
+const [emailUser, emailDomain] = organization.email.split('@');
+---
+
+<section id="contact" class="section band" aria-labelledby="contact-title">
+  <div class="container">
+    <SectionIntro id="contact-title" eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
+    <ul class="contact-types" role="list">
+      {t.types.map((type) => (
+        <li data-contact-type>
+          <span class="type-icon">
+            <Icon name={type.icon} />
+          </span>
+          <h3>{type.title}</h3>
+          <p>{type.description}</p>
+        </li>
+      ))}
+    </ul>
+    <div class="contact-action">
+      <a class="button" data-contact-email href={mailto}>
+        <Icon name="mail" />
+        {t.emailCta}
+      </a>
+      <p class="contact-address">
+        <span class="address-label">{t.emailLabel}</span>{' '}
+        <span class="address" translate="no">
+          {emailUser}
+          <wbr />@{emailDomain}
+        </span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact-types {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Phones: a compact card, the icon beside the title and the description below both. */
+  li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    align-items: center;
+    gap: var(--space-3) var(--space-4);
+    padding: var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--paper);
+    box-shadow: var(--shadow-1);
+  }
+  .type-icon {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--clay-50);
+    color: var(--clay-600);
+  }
+  .type-icon :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
+  h3 {
+    font-size: var(--text-lg);
+  }
+  li p {
+    grid-column: 1 / -1;
+    color: var(--text);
+  }
+  .contact-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-6);
+    margin-top: var(--space-7);
+  }
+  .contact-address {
+    display: grid;
+    min-width: 0;
+    line-height: 1.5;
+  }
+  .address-label {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+  .address {
+    color: var(--ink-900);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+  /* Two columns: the icon sits above the title, as on the original cards. */
+  @media (min-width: 640px) {
+    .contact-types {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-5);
+    }
+    li {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+      padding: var(--space-6);
+    }
+    .type-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: var(--space-1);
+    }
+    .type-icon :global(.icon) {
+      width: 24px;
+      height: 24px;
+    }
+  }
+  /* Wide cards read best with the icon beside the text. */
+  @media (min-width: 1024px) {
+    li {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--space-2) var(--space-5);
+      padding: var(--space-6) var(--space-7) var(--space-6) var(--space-6);
+    }
+    .type-icon {
+      grid-row: 1 / span 2;
+      margin-bottom: 0;
+    }
+    h3,
+    li p {
+      grid-column: 2;
+    }
+  }
+</style>

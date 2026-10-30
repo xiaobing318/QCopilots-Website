@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { parse } from 'parse5';
 import { products } from '../src/content/products.ts';
+import { organization } from '../src/content/site.ts';
+import { ui } from '../src/content/ui.ts';
+import { format } from '../src/lib/i18n.ts';
+import { technicalTerms } from '../src/lib/plain-language.mjs';
 import { asset, basePath, route, canonicalUrl, siteUrl } from '../src/lib/site.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('../dist/', import.meta.url)));
@@ -51,6 +55,33 @@ const textOf = (node) =>
     .replace(/\s+/g, ' ')
     .trim();
 const byId = (nodes, id) => nodes.find((node) => attrs(node).id === id);
+const withAttr = (node, name) => flatten(node).filter((child) => name in attrs(child));
+const ancestors = (node) => {
+  const list = [];
+  for (let parent = node.parentNode; parent; parent = parent.parentNode) list.push(parent);
+  return list;
+};
+const squash = (text) => text.replace(/\s+/g, '');
+const localeOf = (doc) =>
+  (attrs(doc.nodes.find((node) => node.tagName === 'html') ?? {}).lang ?? '').startsWith('zh')
+    ? 'zh'
+    : 'en';
+
+/** Address and subject of a mailto: link. "+" stays "+", because mail apps show it literally. */
+function parseMailto(href) {
+  const match = /^mailto:([^?#]*)(?:\?([^#]*))?$/i.exec(href ?? '');
+  if (!match) return null;
+  const fields = Object.fromEntries(
+    (match[2] ?? '')
+      .split('&')
+      .filter(Boolean)
+      .map((pair) => {
+        const [key, value = ''] = pair.split('=');
+        return [decodeURIComponent(key).toLowerCase(), decodeURIComponent(value)];
+      }),
+  );
+  return { address: decodeURIComponent(match[1]), subject: fields.subject };
+}
 
 const documents = new Map();
 for (const file of files.filter((file) => file.endsWith('.html'))) {
@@ -101,7 +132,16 @@ async function checkLocal(value, from, checkFragment = true) {
 async function checkReference(value, node, from) {
   const relative = relativeTo(from);
   assert(!/^\s*(javascript:|file:|[a-zA-Z]:\\)/i.test(value), `Unsafe reference ${value}`);
-  if (/^(mailto:|tel:)/.test(value)) return;
+  if (/^mailto:/i.test(value)) {
+    // The only address a page may offer is the one in site.ts.
+    assert.equal(
+      parseMailto(value)?.address,
+      organization.email,
+      `${value} in ${relative} must use the contact address from site.ts`,
+    );
+    return;
+  }
+  if (/^tel:/i.test(value)) return;
   if (/^data:/.test(value)) {
     assert(node.tagName === 'img', `data: URL outside an image in ${relative}`);
     return;
@@ -137,9 +177,17 @@ for (const [file, doc] of documents) {
     if (node.tagName === 'script' && a.type === 'application/ld+json')
       JSON.parse(node.childNodes.map((child) => child.value || '').join(''));
     for (const attr of ['href', 'src']) if (a[attr]) await checkReference(a[attr], node, file);
-    if (a.srcset)
-      for (const candidate of a.srcset.split(','))
-        await checkLocal(candidate.trim().split(/\s+/)[0], file, false);
+    // Responsive images (astro:assets <picture>): every candidate of every srcset is published.
+    if ('srcset' in a) {
+      const candidates = a.srcset.split(',').map((candidate) => candidate.trim().split(/\s+/)[0]);
+      assert(candidates.every(Boolean), `Empty srcset candidate in ${relative}`);
+      for (const candidate of candidates) await checkLocal(candidate, file, false);
+    }
+    if (node.tagName === 'source' && node.parentNode?.tagName === 'picture')
+      assert(
+        a.srcset && a.type?.startsWith('image/'),
+        `<picture> source needs srcset and type in ${relative}`,
+      );
   }
   assert(!/[A-Z]:[\\/]Dev[\\/]/.test(doc.source), `Local development path leaked into ${relative}`);
 
@@ -228,6 +276,79 @@ for (const [file, doc] of documents)
   if (file.startsWith(englishRoot)) findChinese(doc.tree, 'en', chinese, relativeTo(file));
 assert.deepEqual(chinese, [], 'English pages contain Chinese outside lang="zh-*" elements');
 
+// Visitors read product copy, not setup notes: no addresses, ports, file paths or model jargon.
+// The pattern is shared with check-content (src/lib/plain-language.mjs).
+const readableMeta = new Set(['description', 'og:title', 'og:description', 'twitter:title']);
+function findTechnicalTerms(node, problems, page) {
+  const a = attrs(node);
+  const values = checkedAttributes.map((name) => [name, a[name]]);
+  if (node.tagName === 'meta' && readableMeta.has(a.name ?? a.property))
+    values.push(['content', a.content]);
+  for (const [name, value] of values)
+    if (value && technicalTerms.test(value))
+      problems.push(`${page}: <${node.tagName} ${name}="${value.slice(0, 80)}">`);
+  if (node.nodeName === '#text' && technicalTerms.test(node.value)) {
+    const at = node.value.search(technicalTerms);
+    problems.push(`${page}: "…${node.value.slice(Math.max(0, at - 30), at + 40).trim()}…"`);
+  }
+  if (skipText.has(node.tagName)) return;
+  for (const child of node.childNodes || []) findTechnicalTerms(child, problems, page);
+}
+const technical = [];
+// The licenses page quotes license texts verbatim, and href values are never shown as text.
+for (const [file, doc] of documents)
+  if (!/(^|\/)licenses\/index\.html$/.test(relativeTo(file)))
+    findTechnicalTerms(doc.tree, technical, relativeTo(file));
+assert.deepEqual(technical, [], 'Pages show technical terms visitors cannot be expected to know');
+
+// Site footer on every page but the entry redirect: email, contact chapter and copyright.
+const entryFile = path.join(root, 'index.html');
+for (const [file, doc] of documents) {
+  if (file === entryFile) continue;
+  const relative = relativeTo(file);
+  const locale = localeOf(doc);
+  const footers = doc.nodes.filter(
+    (node) => node.tagName === 'footer' && node.parentNode?.tagName === 'body',
+  );
+  assert.equal(footers.length, 1, `${relative} needs the site footer`);
+  const one = (name) => {
+    const found = withAttr(footers[0], name);
+    assert.equal(found.length, 1, `${relative} footer needs one [${name}]`);
+    return found[0];
+  };
+
+  const email = one('data-footer-email');
+  assert.equal(email.tagName, 'a', `${relative} [data-footer-email] must be a link`);
+  assert.equal(parseMailto(attrs(email).href)?.address, organization.email, `${relative} email`);
+  assert(textOf(email).includes(organization.email), `${relative} footer must show the address`);
+
+  const contact = one('data-footer-contact');
+  assert.equal(contact.tagName, 'a', `${relative} [data-footer-contact] must be a link`);
+  const target = new URL(attrs(contact).href ?? '', `http://build.test${basePath}${relative}`);
+  assert.equal(
+    `${target.pathname}${target.hash}`,
+    `${route(locale)}#contact`,
+    `${relative} footer contact link must open the ${locale} home #contact`,
+  );
+
+  const copyright = one('data-copyright');
+  const year = String(organization.copyrightYear);
+  assert(textOf(copyright).includes(year), `${relative} copyright year`);
+  assert.equal(
+    squash(textOf(copyright)),
+    squash(format(ui[locale].footer.copyright, { year, company: organization.name })),
+    `${relative} copyright must follow ui.footer.copyright`,
+  );
+  assert(
+    flatten(copyright).some(
+      (node) =>
+        (attrs(node).lang ?? '').toLowerCase().startsWith('zh') &&
+        textOf(node) === organization.name,
+    ),
+    `${relative} company name must sit in an element marked lang="${organization.nameLang}"`,
+  );
+}
+
 // Bilingual routes, metadata and the sitemap.
 const sitemap = await readFile(path.join(root, 'sitemap.xml'), 'utf8');
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => loc);
@@ -290,6 +411,28 @@ for (const locale of locales) {
     const reachable = flatten(thumb).filter((node) => node.tagName && focusable(node, attrs(node)));
     assert.equal(reachable.length, 0, `Focusable content inside a home demo thumb (${locale})`);
   }
+
+  // Home: ways to work together, and an email button with the address written out.
+  const contactCopy = ui[locale].contact;
+  const contact = byId(home.nodes, 'contact');
+  assert(contact?.tagName === 'section', `Home ${locale} is missing section#contact`);
+  assert.equal(attrs(contact)['aria-labelledby'], 'contact-title', `Home ${locale} #contact label`);
+  assert(byId(flatten(contact), 'contact-title'), `Home ${locale} is missing #contact-title`);
+  const contactTypes = withAttr(contact, 'data-contact-type');
+  assert.equal(contactTypes.length, contactCopy.types.length, `Home ${locale} contact types`);
+  contactCopy.types.forEach((type, index) => {
+    const heading = flatten(contactTypes[index]).find((node) => node.tagName === 'h3');
+    assert.equal(heading && textOf(heading), type.title, `Home ${locale} contact type ${index}`);
+  });
+  const contactEmails = withAttr(contact, 'data-contact-email');
+  assert.equal(contactEmails.length, 1, `Home ${locale} needs one [data-contact-email]`);
+  assert.equal(contactEmails[0].tagName, 'a', `Home ${locale} [data-contact-email] is a link`);
+  assert.deepEqual(
+    parseMailto(attrs(contactEmails[0]).href),
+    { address: organization.email, subject: contactCopy.emailSubject },
+    `Home ${locale} email link needs the address and an encoded ui.contact.emailSubject`,
+  );
+  assert(textOf(contact).includes(organization.email), `Home ${locale} must show the address`);
 
   for (const product of products) {
     const slug = `products/${product.id}`;
@@ -354,6 +497,123 @@ for (const locale of locales) {
         assert(!inside.some((node) => node.tagName === 'a'), `${entry.id} links while pending`);
       }
     });
+
+    // Before release: one email invitation after the download cards, never inside one.
+    const trials = withAttr(doc.tree, 'data-trial');
+    const comingSoon = product.status === 'coming-soon';
+    assert.equal(trials.length, comingSoon ? 1 : 0, `${urlPath} [data-trial] count`);
+    if (comingSoon) {
+      const t = ui[locale].product;
+      const trialLinks = withAttr(doc.tree, 'data-trial-link');
+      assert.equal(trialLinks.length, 1, `${urlPath} needs one [data-trial-link]`);
+      const [trial, link] = [trials[0], trialLinks[0]];
+      assert.equal(link.tagName, 'a', `${urlPath} [data-trial-link] must be a link`);
+      assert(flatten(trial).includes(link), `${urlPath} trial link must sit in [data-trial]`);
+      assert(textOf(trial).includes(t.trialPrompt), `${urlPath} trial prompt`);
+      assert.deepEqual(
+        parseMailto(attrs(link).href),
+        {
+          address: organization.email,
+          subject: format(t.trialSubject, { name: product.locales[locale].name }),
+        },
+        `${urlPath} trial link needs the address and an encoded ui.product.trialSubject`,
+      );
+      assert(
+        ![trial, ...ancestors(trial)].some((node) => node.tagName === 'article'),
+        `${urlPath} trial invitation must stay outside the download cards`,
+      );
+      assert(
+        doc.nodes.indexOf(trial) > doc.nodes.indexOf(cards.at(-1)),
+        `${urlPath} trial invitation must follow the download cards`,
+      );
+    }
+
+    // A recorded run: real screenshots, labelled as such, inside the examples chapter.
+    const run = product.locales[locale].realRun;
+    const realRun = byId(doc.nodes, 'real-run');
+    if (!run) assert(!realRun, `${urlPath} shows #real-run without realRun content`);
+    else {
+      const useCases = byId(doc.nodes, 'use-cases');
+      assert(realRun && ancestors(realRun).includes(useCases), `${urlPath} #real-run placement`);
+      const block = attrs(realRun);
+      assert.equal(block['aria-labelledby'], 'real-run-title', `${urlPath} #real-run label`);
+      assert(
+        !('aria-hidden' in block || 'inert' in block),
+        `${urlPath} #real-run must be readable`,
+      );
+      const inside = flatten(realRun);
+      const one = (name) => {
+        const found = withAttr(realRun, name);
+        assert.equal(found.length, 1, `${urlPath} #real-run needs one [${name}]`);
+        return found[0];
+      };
+      const title = byId(inside, 'real-run-title');
+      assert.equal(title?.tagName, 'h3', `${urlPath} #real-run-title must be an h3`);
+      assert.equal(textOf(title), run.title, `${urlPath} real run title`);
+      assert.equal(
+        textOf(one('data-real-badge')),
+        ui[locale].product.realBadge,
+        `${urlPath} badge`,
+      );
+      const items = (node) => (node.childNodes || []).filter((child) => child.tagName === 'li');
+      for (const [name, expected] of [
+        ['data-real-prompts', run.prompts],
+        ['data-real-steps', run.steps],
+      ]) {
+        const list = one(name);
+        assert.equal(list.tagName, 'ol', `${urlPath} [${name}] must be an <ol>`);
+        const texts = items(list).map(textOf);
+        assert.equal(texts.length, expected.length, `${urlPath} [${name}] count`);
+        expected.forEach((text, index) =>
+          assert(texts[index].includes(text.replace(/\s+/g, ' ').trim()), `${urlPath} ${name}`),
+        );
+      }
+      const facts = one('data-real-facts');
+      assert.equal(facts.tagName, 'dl', `${urlPath} [data-real-facts] must be a <dl>`);
+      assert.equal(
+        flatten(facts).filter((node) => node.tagName === 'dt').length,
+        run.facts.length,
+        `${urlPath} real run fact count`,
+      );
+      const figures = withAttr(realRun, 'data-real-image');
+      assert.equal(figures.length, run.images.length, `${urlPath} real screenshot count`);
+      assert.equal(
+        withAttr(realRun, 'data-real-open').length,
+        run.images.length,
+        `${urlPath} needs one [data-real-open] per screenshot`,
+      );
+      for (const [index, image] of run.images.entries()) {
+        const label = `${urlPath} real screenshot ${index + 1}`;
+        const figure = figures[index];
+        assert.equal(figure.tagName, 'figure', `${label} must be a <figure>`);
+        const imgs = flatten(figure).filter((node) => node.tagName === 'img');
+        assert.equal(imgs.length, 1, `${label} needs one <img>`);
+        const img = attrs(imgs[0]);
+        assert(image.alt.trim() && img.alt === image.alt, `${label} alt must match content`);
+        for (const side of ['width', 'height'])
+          assert(Number(img[side]) > 0, `${label} needs a positive ${side}`);
+        assert(img.src?.startsWith(asset('/_astro/')), `${label} must come from astro:assets`);
+        const caption = flatten(figure).find((node) => node.tagName === 'figcaption');
+        assert(
+          caption && textOf(caption).includes(image.caption.replace(/\s+/g, ' ').trim()),
+          `${label} caption`,
+        );
+        const open = ancestors(imgs[0]).find(
+          (node) => node.tagName === 'a' && 'data-real-open' in attrs(node),
+        );
+        assert(open && inside.includes(open), `${label} must be wrapped in [data-real-open]`);
+        const href = attrs(open).href ?? '';
+        assert(
+          /\.(avif|webp|png|jpe?g)$/i.test(new URL(href, 'http://build.test').pathname),
+          `${label} must open an image file, not ${href}`,
+        );
+        await checkLocal(
+          href,
+          path.join(root, urlPath.slice(basePath.length), 'index.html'),
+          false,
+        );
+      }
+    }
   }
 
   // Licenses: not indexed, and each notice links to a published text file.
@@ -406,5 +666,5 @@ assert(
 assert(attrs(meta(entry, 'name', 'robots') ?? {}).content?.includes('noindex'), 'Entry noindex');
 
 console.log(
-  `Verified ${documents.size} HTML documents at ${basePath}: local resources, anchors, external links, bilingual SEO, sitemap, English purity, demos, downloads, licenses and styles.`,
+  `Verified ${documents.size} HTML documents at ${basePath}: local resources, anchors, external links, bilingual SEO, sitemap, English purity, plain-language copy, contact and footer, demos, real runs, downloads, trial invitations, licenses and styles.`,
 );

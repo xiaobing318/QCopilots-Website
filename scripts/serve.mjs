@@ -17,8 +17,11 @@ const mime = {
   '.json': 'application/json',
   '.xml': 'application/xml',
   '.txt': 'text/plain',
+  '.avif': 'image/avif',
   '.webp': 'image/webp',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.woff2': 'font/woff2',
 };

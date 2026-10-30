@@ -6,10 +6,17 @@ import { products } from '../src/content/products.ts';
 import { ui } from '../src/content/ui.ts';
 import { demoKeys } from '../src/content/demos.ts';
 import { iconNames } from '../src/content/icons.ts';
+import { organization } from '../src/content/site.ts';
+import { technicalTerms } from '../src/lib/plain-language.mjs';
+import {
+  areas as mapAreas,
+  breaks as mapBreaks,
+} from '../src/components/demos/geometry/germany-states.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const ids = new Set();
 const orders = new Set();
+const technical = [];
 function checkStrings(value, label) {
   if (typeof value === 'string') {
     assert(value.trim(), `${label} is empty`);
@@ -44,6 +51,19 @@ function checkEnglish(value, label) {
   }
   if (value && typeof value === 'object')
     for (const [key, item] of Object.entries(value)) checkEnglish(item, `${label}.${key}`);
+}
+function findTechnical(value, label) {
+  if (typeof value === 'string') {
+    const match = technicalTerms.exec(value);
+    if (match) technical.push(`${label} contains "${match[0]}": ${value}`);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => findTechnical(item, `${label}[${index}]`));
+    return;
+  }
+  if (value && typeof value === 'object')
+    for (const [key, item] of Object.entries(value)) findTechnical(item, `${label}.${key}`);
 }
 function luminance(hex) {
   const [r, g, b] = [1, 3, 5].map((start) => {
@@ -82,9 +102,57 @@ for (const product of products) {
   );
   checkStrings(product.locales, product.id);
   checkEnglish(product.locales.en, `${product.id}.en`);
+  findTechnical(product.locales, product.id);
   for (const locale of ['zh', 'en'])
     for (const highlight of product.locales[locale].highlights)
       assert(iconNames.includes(highlight.icon), `Unknown icon ${highlight.icon}`);
+  // realRun is optional. The shape check above keeps it in both languages or neither,
+  // and checkStrings rejects empty images, prompts, steps and facts.
+  const realRun = product.locales.zh.realRun;
+  if (realRun) {
+    const date = realRun.recordedOn;
+    const parsed = new Date(date);
+    assert(
+      /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().startsWith(date),
+      `${product.id} realRun.recordedOn must be a real YYYY-MM-DD date: ${date}`,
+    );
+    assert.equal(
+      product.locales.en.realRun.recordedOn,
+      date,
+      `${product.id} realRun.recordedOn must be the same in both languages`,
+    );
+    for (const locale of ['zh', 'en'])
+      for (const image of product.locales[locale].realRun.images) {
+        const file = image.file;
+        assert(
+          !file.includes('..') && !file.startsWith('/') && /\.(png|jpe?g)$/.test(file),
+          `${product.id}.${locale} realRun image must be a .png, .jpg or .jpeg under src/assets/real-runs/: ${file}`,
+        );
+        await access(path.join(root, 'src/assets/real-runs', file)).catch(() =>
+          assert.fail(
+            `${product.id}.${locale} realRun image is missing: src/assets/real-runs/${file}`,
+          ),
+        );
+      }
+  }
+  // The QCopilots map demo pairs content with generated geometry by position, so keep them in step
+  // after any regeneration of src/components/demos/geometry/germany-states.ts.
+  if (product.demo === 'qcopilots-qgis')
+    for (const locale of ['zh', 'en']) {
+      const { labels, scenes } = product.locales[locale].demo;
+      const km2 = (value) => Math.round(value).toLocaleString('en-US');
+      for (let n = 1; n <= 5; n += 1) {
+        const label = labels[`class${n}`] ?? '';
+        if (n > 1) assert(label.includes(km2(mapBreaks[n - 1])), `${locale} class${n}: ${label}`);
+        if (n < 5) assert(label.includes(km2(mapBreaks[n])), `${locale} class${n}: ${label}`);
+      }
+      for (const scene of scenes)
+        (scene.rows ?? []).forEach((row, index) =>
+          assert.equal(row.label, mapAreas[index]?.name, `${locale} demo row ${index} vs geometry`),
+        );
+    }
   const icon = product.icon.src;
   assert(icon.startsWith('/images/') && !icon.includes('..'), `Invalid asset ${icon}`);
   await access(path.join(root, 'public', icon));
@@ -118,9 +186,18 @@ for (const product of products) {
 assert.deepEqual(shape(ui.zh), shape(ui.en), 'UI translation structure mismatch');
 checkStrings(ui, 'ui');
 checkEnglish(ui.en, 'ui.en');
+findTechnical(ui, 'ui');
+assert(
+  !technical.length,
+  `Copy is for everyday users. Remove these technical terms:\n  ${technical.join('\n  ')}`,
+);
 for (const locale of ['zh', 'en'])
-  for (const principle of ui[locale].home.principles)
-    assert(iconNames.includes(principle.icon), `Unknown icon ${principle.icon}`);
+  for (const item of [...ui[locale].home.principles, ...ui[locale].contact.types])
+    assert(iconNames.includes(item.icon), `Unknown icon ${item.icon}`);
+assert(
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(organization.email),
+  `Invalid contact email in src/content/site.ts: ${organization.email}`,
+);
 
 // Every UI string must be used somewhere, so stale copy cannot pile up again.
 async function sourceFiles(directory) {
@@ -149,5 +226,5 @@ for (const [section, values] of Object.entries(ui.en))
     );
 
 console.log(
-  `Content verified: ${products.length} products, two complete languages, themes, demos, icons and downloads.`,
+  `Content verified: ${products.length} products, two complete languages, plain-language copy, themes, demos, real runs, icons, contact and downloads.`,
 );

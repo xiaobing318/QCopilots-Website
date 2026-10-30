@@ -35,6 +35,15 @@ export interface DemoScene {
   steps?: readonly string[];
   reply?: string;
   results?: readonly DemoResult[];
+  /** A small table, e.g. the answer to a follow-up question. */
+  rows?: readonly DemoRow[];
+  /** Real result count when the demo shows only the first few results. */
+  total?: number;
+}
+
+export interface DemoRow {
+  label: string;
+  value: string;
 }
 
 export interface DemoResult {
@@ -51,6 +60,32 @@ export interface DemoCopy {
   placeholder: string;
   labels: Readonly<Record<string, string>>;
   scenes: readonly DemoScene[];
+}
+
+/** A real screenshot from a recorded run. `file` is relative to src/assets/real-runs/. */
+export interface RealRunImage {
+  file: string;
+  alt: string;
+  caption: string;
+}
+
+/** A recorded run of the real product, shown next to the illustrated demo. */
+export interface RealRun {
+  title: string;
+  intro: string;
+  /** Exactly what was typed, in order. */
+  prompts: readonly string[];
+  /** What the product did, summarised from the run. */
+  steps: readonly string[];
+  /** Real numbers from the run only. */
+  facts: readonly Fact[];
+  images: readonly RealRunImage[];
+  /** Product build and system the run used. */
+  version: string;
+  /** ISO date (YYYY-MM-DD), identical in both locales. */
+  recordedOn: string;
+  /** Data source, where the model ran, and how the screenshots were edited. */
+  note: string;
 }
 
 export interface ProductContent {
@@ -70,6 +105,7 @@ export interface ProductContent {
   faq: readonly { question: string; answer: string }[];
   downloads: { title: string; description: string };
   demo: DemoCopy;
+  realRun?: RealRun;
 }
 
 export interface DownloadEntry {

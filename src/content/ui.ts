@@ -7,6 +7,8 @@ interface Principle {
   description: string;
 }
 
+type CooperationType = Principle;
+
 export interface UiCopy {
   meta: { siteName: string; description: string };
   nav: {
@@ -60,10 +62,40 @@ export interface UiCopy {
     related: string;
     youAsk: string;
     youGet: string;
+    realRunEyebrow: string;
+    realBadge: string;
+    realPrompts: string;
+    realSteps: string;
+    /** {date} is the localized recording date. */
+    realRecorded: string;
+    realOpen: string;
+    trialPrompt: string;
+    trialCta: string;
+    /** Email subject. {name} is the product name. */
+    trialSubject: string;
+  };
+  /** Cooperation and contact. The address itself lives in site.ts. */
+  contact: {
+    eyebrow: string;
+    title: string;
+    lead: string;
+    types: readonly CooperationType[];
+    emailCta: string;
+    emailLabel: string;
+    emailSubject: string;
+    footerHeading: string;
+    footerLink: string;
   };
   demo: { pause: string; illustrative: string };
   notFound: { title: string; description: string; home: string };
-  footer: { tagline: string; productsNav: string; licenses: string; rights: string };
+  footer: {
+    tagline: string;
+    productsNav: string;
+    licenses: string;
+    rights: string;
+    /** {year} and {company} come from site.ts. */
+    copyright: string;
+  };
 }
 
 export const ui: Localized<UiCopy> = {
@@ -84,7 +116,7 @@ export const ui: Localized<UiCopy> = {
       seoTitle: 'QCopilots · 帮你处理地图与文件的 AI 助手',
       eyebrow: 'QCopilots 系列',
       title: ['用你自己的话，', '处理地图与文件。'],
-      lead: '在 QGIS 里描述想做的地图工作，或者用记得的内容找回电脑里的文件。QCopilots 在你自己的电脑上运行，每一步都清楚可见。',
+      lead: '在 QGIS 里描述想做的地图工作，或者用记得的内容找回电脑里的文件。QCopilots 在你信任的设备上运行，每一步都清楚可见。',
       primaryCta: '了解产品',
       secondaryCta: '看看能做什么',
       familyEyebrow: '产品',
@@ -98,8 +130,9 @@ export const ui: Localized<UiCopy> = {
       principles: [
         {
           icon: 'drive',
-          title: '在你的电脑上运行',
-          description: '默认使用本地模型与本地索引，你的项目和文件不需要离开这台电脑。',
+          title: '在你掌控的地方运行',
+          description:
+            'Search 在本机建立索引。QCopilots 的地图工具在你的 QGIS 里运行，模型放在你的电脑或你信任的服务器上。',
         },
         {
           icon: 'eye',
@@ -142,6 +175,48 @@ export const ui: Localized<UiCopy> = {
       related: '了解其他产品',
       youAsk: '你这样说',
       youGet: '它这样做',
+      realRunEyebrow: '一次真实运行',
+      realBadge: '真实截图',
+      realPrompts: '我们的输入',
+      realSteps: '它做了什么',
+      realRecorded: '录制于 {date}',
+      realOpen: '查看原图',
+      trialPrompt: '想在正式发布前试用？',
+      trialCta: '申请试用',
+      trialSubject: '申请试用 {name}',
+    },
+    contact: {
+      eyebrow: '合作方式',
+      title: '想试用，或者想一起做点什么？',
+      lead: '无论是提前试用、把模型部署到你的服务器，还是为你的行业定制 QCopilots，都欢迎来信，我们会尽快回复。',
+      types: [
+        {
+          icon: 'sparkle',
+          title: '试用与内测申请',
+          description: '想在正式发布前用上 QCopilots，或者参与新版本内测，告诉我们你打算怎么用。',
+        },
+        {
+          icon: 'cpu',
+          title: '部署与模型支持',
+          description: '帮你把模型服务部署到服务器、工作站或你自己的电脑上，并接入 QCopilots。',
+        },
+        {
+          icon: 'code',
+          title: '定制开发',
+          description:
+            '按你的行业和业务需要定制地图工具与工作流程，或者和我们一起打造新的 QCopilots 产品。',
+        },
+        {
+          icon: 'handshake',
+          title: '商务与渠道合作',
+          description: '代理、集成或联合方案，欢迎聊聊合作的可能。',
+        },
+      ],
+      emailCta: '写邮件给我们',
+      emailLabel: '联系邮箱',
+      emailSubject: 'QCopilots 合作咨询',
+      footerHeading: '联系我们',
+      footerLink: '合作方式',
     },
     demo: { pause: '暂停动画', illustrative: '界面示意' },
     notFound: {
@@ -153,7 +228,8 @@ export const ui: Localized<UiCopy> = {
       tagline: '帮你处理地图与文件的 AI 助手。',
       productsNav: '页脚产品链接',
       licenses: '开源许可',
-      rights: '本站内容与界面示意仅用于产品介绍。',
+      rights: '页面中的动画为界面示意，真实截图另有标注。',
+      copyright: '© {year} {company} 版权所有',
     },
   },
   en: {
@@ -173,7 +249,7 @@ export const ui: Localized<UiCopy> = {
       seoTitle: 'QCopilots · Quiet help for your maps and files',
       eyebrow: 'The QCopilots family',
       title: ['Quiet help for', 'your maps and files.'],
-      lead: 'Describe the map work you want done in QGIS, or find a file on your computer by what you remember about it. QCopilots runs on your own computer and shows you every step.',
+      lead: 'Describe the map work you want done in QGIS, or find a file on your computer by what you remember about it. QCopilots works on machines you trust and shows you every step.',
       primaryCta: 'Meet the products',
       secondaryCta: 'See what you can ask',
       familyEyebrow: 'Products',
@@ -188,9 +264,9 @@ export const ui: Localized<UiCopy> = {
       principles: [
         {
           icon: 'drive',
-          title: 'Runs on your computer',
+          title: 'Runs where you decide',
           description:
-            'Local models and local indexes by default, so your projects and files can stay on this machine.',
+            'Search builds its index on your computer. QCopilots runs its map tools inside your QGIS, with the model on your own computer or a server you trust.',
         },
         {
           icon: 'eye',
@@ -233,6 +309,50 @@ export const ui: Localized<UiCopy> = {
       related: 'More from QCopilots',
       youAsk: 'You say',
       youGet: 'It does',
+      realRunEyebrow: 'A real run',
+      realBadge: 'Real screenshots',
+      realPrompts: 'What we asked',
+      realSteps: 'What it did',
+      realRecorded: 'Recorded on {date}',
+      realOpen: 'Open full size',
+      trialPrompt: 'Want to try it before release?',
+      trialCta: 'Request early access',
+      trialSubject: 'Early access to {name}',
+    },
+    contact: {
+      eyebrow: 'Work with us',
+      title: 'Want to try it, or build something together?',
+      lead: 'Early access, help running the model on your own servers, or a QCopilots made for your field. Write to us and we will get back to you soon.',
+      types: [
+        {
+          icon: 'sparkle',
+          title: 'Early access and beta',
+          description:
+            'Use QCopilots before its public release or join the beta. Tell us how you plan to use it.',
+        },
+        {
+          icon: 'cpu',
+          title: 'Deployment and model support',
+          description:
+            'We help you run the model service on a server, a workstation or your own computer, and connect it to QCopilots.',
+        },
+        {
+          icon: 'code',
+          title: 'Custom development',
+          description:
+            'Map tools and workflows shaped around your field and your process, or a new QCopilots product we build together.',
+        },
+        {
+          icon: 'handshake',
+          title: 'Business and channel partnerships',
+          description: 'Reselling, integration or joint solutions. We would be glad to talk.',
+        },
+      ],
+      emailCta: 'Email us',
+      emailLabel: 'Email',
+      emailSubject: 'QCopilots inquiry',
+      footerHeading: 'Contact',
+      footerLink: 'Ways to work with us',
     },
     demo: { pause: 'Pause animation', illustrative: 'Illustrative preview' },
     notFound: {
@@ -244,7 +364,8 @@ export const ui: Localized<UiCopy> = {
       tagline: 'Quiet help for your maps and files.',
       productsNav: 'Footer products',
       licenses: 'Open-source licenses',
-      rights: 'Product previews on this site are illustrations.',
+      rights: 'Animated previews are illustrations. Real screenshots are labeled as such.',
+      copyright: '© {year} {company}. All rights reserved.',
     },
   },
 };

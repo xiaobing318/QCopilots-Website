@@ -1,9 +1,11 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { organization } from '../../src/content/site';
 import {
   chineseOutsideZh,
   collectConsoleErrors,
   collectRequests,
   horizontalOverflow,
+  parseMailto,
 } from '../shared/checks';
 
 /** Adds a unique query so GitHub Pages' CDN cannot answer with an older copy of the page. */
@@ -123,6 +125,21 @@ test('English pages show no Chinese outside language-marked elements', async ({
       expect(await chineseOutsideZh(page), path).toEqual([]);
     });
   }
+});
+
+test('the English home footer shows the contact email and copyright', async ({ page }) => {
+  const response = await page.goto(fresh('en/'));
+  expect(response?.status()).toBe(200);
+  const email = page.locator('footer a[data-footer-email]');
+  await expect(email).toBeVisible();
+  await expect(email).toContainText(organization.email);
+  expect(parseMailto(await email.getAttribute('href'))?.address).toBe(organization.email);
+  const copyright = page.locator('footer [data-copyright]');
+  await expect(copyright).toBeVisible();
+  await expect(copyright).toContainText(String(organization.copyrightYear));
+  await expect(copyright.locator(`[lang="${organization.nameLang}"]`)).toHaveText(
+    organization.name,
+  );
 });
 
 test('a missing address shows a recovery page', async ({ page }) => {
