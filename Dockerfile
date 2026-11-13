@@ -1,5 +1,5 @@
 # Pinned multi-platform manifest from the Docker Official Image registry.
-FROM caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f
+FROM caddy:2.11.8-alpine@sha256:f6228111e5fafa1a5238258d0858e103f10599b8d1659a146e7726681a002bb9
 
 ARG BASE_PATH=/
 ARG RELEASE_ID=local
